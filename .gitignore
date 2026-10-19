@@ -1,0 +1,6 @@
+# textbook source files (copyrighted, keep local)
+*.pdf
+
+# OS / editor
+.DS_Store
+Thumbs.db

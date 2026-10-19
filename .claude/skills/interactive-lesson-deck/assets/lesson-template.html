@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>互動教學簡報</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#fdf7f0; --paper:#fffdfa; --ink:#4a3f4f; --ink2:#857a8a; --ink3:#c2b8c4; --line:#efe4ea;
+  --pink:#f8cdd8;  --pink-d:#c4587c;  --pink-l:#fdeef2;
+  --sky:#c4e2f8;   --sky-d:#3a78b0;   --sky-l:#ebf5fd;
+  --peach:#ffd8bd; --peach-d:#c0662a; --peach-l:#fff1e6;
+  --mint:#c3ecd9;  --mint-d:#2f8a66;  --mint-l:#ebf8f1;
+  --lav:#dcd2f7;   --lav-d:#6d58b8;   --lav-l:#f3effd;
+  --lemon:#faeeb2; --lemon-d:#97760d;
+  --shadow:0 6px 0 rgba(196,88,124,.06), 0 10px 28px rgba(109,88,184,.08);
+  --shadow-s:0 3px 0 rgba(109,88,184,.07), 0 6px 14px rgba(109,88,184,.07);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#e9dfe8;overflow:hidden;
+  font-family:"Nunito","Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif;color:var(--ink)}
+#viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#stage{width:1920px;height:1080px;position:relative;transform-origin:center center;flex:none;display:flex;flex-direction:column;
+  background:var(--cream);
+  background-image:radial-gradient(circle at 1px 1px, rgba(196,88,124,.10) 1.6px, transparent 0);background-size:34px 34px;overflow:hidden}
+#stage::before,#stage::after{content:"";position:absolute;border-radius:50%;z-index:0;pointer-events:none}
+#stage::before{width:520px;height:520px;background:var(--pink-l);top:-260px;left:-200px}
+#stage::after{width:620px;height:620px;background:var(--mint-l);bottom:-380px;right:-240px}
+header,main{position:relative;z-index:1}
+.en{font-family:"Nunito","Segoe UI",Arial,sans-serif}
+kbd{font-family:inherit;font-size:14px;color:var(--ink2);background:var(--cream);border:2px solid var(--line);border-radius:7px;padding:0 6px;font-weight:700}
+
+/* ---------- header ---------- */
+header{height:96px;display:flex;align-items:center;justify-content:space-between;padding:0 44px}
+.tag{display:flex;align-items:center;gap:12px;font-size:24px;font-weight:700;color:var(--lav-d);background:var(--paper);padding:10px 22px 10px 12px;border-radius:40px;box-shadow:var(--shadow-s);border:0;cursor:pointer;font-family:inherit}
+.tag:hover{background:var(--lav-l)}
+.tag .dots{display:flex;gap:5px}
+.tag .dots i{width:16px;height:16px;border-radius:50%;display:block}
+.title{font-size:40px;font-weight:800;letter-spacing:1px;display:flex;align-items:center;gap:16px}
+.kind{font-size:22px;border-radius:30px;padding:5px 18px}
+.kind.concept{background:var(--sky);color:var(--sky-d)}
+.kind.practice{background:var(--lemon);color:var(--lemon-d)}
+.ref{font-size:22px;font-weight:700;color:var(--peach-d);background:var(--peach-l);border:2px solid var(--peach);padding:8px 20px;border-radius:30px}
+
+/* ---------- slide layout: diagram in the middle, one line below ---------- */
+main{flex:1;min-height:0}
+.slide{position:absolute;inset:0 70px 6px;display:none;flex-direction:column;gap:20px}
+.slide.active{display:flex;animation:pageIn .45s cubic-bezier(.2,.8,.3,1)}
+@keyframes pageIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.diagram{flex:1;min-height:0;background:var(--paper);border-radius:36px;box-shadow:var(--shadow);border:3px solid #fff;position:relative;padding:22px 30px;display:flex;flex-direction:column}
+.diagram > svg{display:block;width:100%;height:100%;flex:1;min-height:0}
+.dhint{font-size:23px;font-weight:700;color:var(--ink2);display:flex;align-items:center;gap:10px}
+.dhint::before{content:"";width:12px;height:12px;border-radius:50%;background:var(--pink-d);box-shadow:0 0 0 6px var(--pink)}
+.qno{position:absolute;left:28px;top:20px;font-size:22px;font-weight:800;background:var(--lemon);color:var(--lemon-d);border-radius:16px;padding:5px 16px;z-index:2}
+.below{flex:none;display:flex;flex-direction:column;align-items:center;gap:14px;padding-bottom:4px}
+#stage.zoom .below{display:none}
+
+.sentence{font-size:56px;line-height:1.3;font-weight:800;text-align:center}
+.sentence.long{font-size:46px}
+.sentence .sub{display:block;font-size:32px;color:var(--ink2);font-weight:700;margin-top:4px;font-family:"Nunito","Microsoft JhengHei",sans-serif}
+.sentence .nope{text-decoration:line-through;text-decoration-thickness:5px;text-decoration-color:var(--pink-d);opacity:.45}
+.v{color:var(--sky-d);background:var(--sky-l);border:3px solid var(--sky);border-radius:16px;padding:0 12px}
+.t{color:var(--peach-d);background:var(--peach-l);border:3px solid var(--peach);border-radius:16px;padding:0 12px}
+input.blank{font-family:"Nunito",sans-serif;font-size:50px;font-weight:800;color:var(--ink);background:var(--lemon);border:0;border-bottom:5px solid var(--lemon-d);border-radius:16px 16px 6px 6px;padding:0 16px;outline:none;text-align:center;vertical-align:baseline;transition:all .2s}
+.sentence.long input.blank{font-size:42px}
+input.blank::placeholder{color:#c9b46a;font-weight:700}
+input.blank:focus{background:#fff6cf;box-shadow:0 0 0 4px var(--lav)}
+input.blank.ok{background:var(--mint);border-color:var(--mint-d);color:var(--mint-d)}
+input.blank.bad{background:var(--pink);border-color:var(--pink-d);color:var(--pink-d);animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+
+.actions{display:flex;align-items:center;gap:12px}
+.actions button{font-family:inherit;font-size:23px;font-weight:800;padding:9px 22px;border-radius:30px;border:0;cursor:pointer;background:var(--paper);color:var(--ink);box-shadow:0 3px 0 var(--line),var(--shadow-s);white-space:nowrap;display:flex;align-items:center;gap:8px}
+.actions button:hover{transform:translateY(-2px)}
+.actions .go{background:var(--mint);color:var(--mint-d)}
+.actions .ask{background:var(--pink);color:var(--pink-d)}
+.actions .ex.ready{background:var(--lav);color:var(--lav-d);animation:nudge 1.2s ease-in-out 2}
+@keyframes nudge{50%{transform:translateY(-5px)}}
+.fb{font-size:26px;font-weight:800;padding:6px 18px;border-radius:24px;display:none}
+.fb.ok{display:block;background:var(--mint-l);color:var(--mint-d)}
+.fb.bad{display:block;background:var(--pink-l);color:var(--pink-d)}
+.fb.show{display:block;background:var(--lav-l);color:var(--lav-d)}
+.score{font-size:20px;font-weight:700;color:var(--ink2);margin-left:6px}
+.score b{color:var(--mint-d);font-size:24px}
+
+.exbtn{position:absolute;right:22px;bottom:20px;font-family:inherit;font-size:22px;font-weight:800;padding:9px 20px;border-radius:30px;border:0;cursor:pointer;background:var(--lav-l);color:var(--lav-d);box-shadow:0 3px 0 var(--lav);display:flex;align-items:center;gap:8px;z-index:3}
+.exbtn:hover{background:var(--lav)}
+
+.explain{position:absolute;inset:-6px -40px;z-index:12;display:none;align-items:center;justify-content:center;background:rgba(253,247,240,.72);backdrop-filter:blur(3px)}
+.slide.exopen .explain{display:flex}
+.exbox{width:1240px;max-height:96%;overflow:hidden;background:var(--paper);border-radius:40px;padding:34px 48px 30px;box-shadow:0 20px 60px rgba(74,63,79,.18);border:4px solid var(--lav);animation:pageIn .35s cubic-bezier(.2,.8,.3,1);position:relative}
+.exbox h3{margin:0 0 18px;font-size:34px;font-weight:800;display:flex;align-items:center;gap:14px}
+.exbox h3 span{font-size:20px;background:var(--lav);color:var(--lav-d);border-radius:20px;padding:3px 14px}
+.exbox .close{position:absolute;right:26px;top:24px;width:52px;height:52px;border-radius:50%;border:0;background:var(--cream);font-size:28px;cursor:pointer;color:var(--ink2)}
+.exbody{font-size:31px;line-height:1.6;font-weight:700}
+.exbody ol{margin:0;padding:0;list-style:none;counter-reset:n;display:flex;flex-direction:column;gap:14px}
+.exbody li{counter-increment:n;display:flex;gap:16px;align-items:flex-start}
+.exbody li::before{content:counter(n);flex:none;width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;margin-top:2px;background:var(--pink);color:var(--pink-d)}
+.exbody li:nth-child(2)::before{background:var(--mint);color:var(--mint-d)}
+.exbody li:nth-child(3)::before{background:var(--sky);color:var(--sky-d)}
+.exbody li:nth-child(4)::before{background:var(--peach);color:var(--peach-d)}
+.exbody table{border-collapse:separate;border-spacing:0 8px;font-size:28px;width:100%}
+.exbody td{padding:6px 18px;background:var(--cream)}
+.exbody td:first-child{border-radius:14px 0 0 14px}
+.exbody td:last-child{border-radius:0 14px 14px 0}
+.exbody tr.hl td{background:var(--sky);color:var(--sky-d)}
+.exbody .arrow{color:var(--ink3)}
+.exbody .note{margin-top:14px;font-size:27px;color:var(--ink2)}
+
+svg text{font-family:"Nunito","Microsoft JhengHei","Noto Sans TC",sans-serif;font-weight:700}
+svg,.week,.freqRow,header,footer,.tgrid,.steps{user-select:none;-webkit-user-select:none}
+svg{touch-action:none}
+.drag{cursor:grab}
+.drag:active{cursor:grabbing}
+.click{cursor:pointer}
+
+/* ---------- footer ---------- */
+footer{position:relative;z-index:30;height:96px;display:flex;align-items:center;justify-content:space-between;padding:0 36px;gap:16px}
+.bar{display:flex;align-items:center;gap:6px;background:var(--paper);border-radius:50px;padding:10px 12px;box-shadow:var(--shadow)}
+.bar button{position:relative;white-space:nowrap;font:inherit;font-size:21px;font-weight:700;display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:40px;border:0;background:transparent;cursor:pointer;color:var(--ink);transition:all .2s}
+.bar button:hover{background:var(--lav-l)}
+.bar button svg{width:22px;height:22px}
+.bar .sep{width:2px;height:34px;background:var(--line);margin:0 4px}
+.bar button.on{background:var(--lav);color:var(--lav-d)}
+.pagedots{display:flex;gap:7px;align-items:center}
+.pagedots i{width:13px;height:13px;border-radius:10px;background:var(--line);cursor:pointer;transition:all .3s}
+.pagedots i.on{width:36px;background:var(--lav-d)}
+.pagedots i.gap{margin-left:9px}
+#pausedBadge{position:absolute;top:110px;left:50%;transform:translateX(-50%);font-size:24px;font-weight:800;background:var(--lav-d);color:#fff;padding:8px 26px;border-radius:30px;display:none;z-index:5;box-shadow:var(--shadow)}
+#stage.paused #pausedBadge{display:block}
+
+/* ---------- drawing tools ---------- */
+#ink{position:absolute;inset:0;z-index:20;pointer-events:none}
+#stage.drawing #ink{pointer-events:auto}
+#stage.t-pen #ink{cursor:crosshair}
+#stage.t-eraser #ink{cursor:cell}
+#stage.t-laser #ink{cursor:none}
+.tools{display:flex;align-items:center;gap:4px;background:var(--paper);border-radius:50px;padding:8px 10px;box-shadow:var(--shadow)}
+.tools button{font:inherit;width:54px;height:54px;border-radius:50%;border:0;background:transparent;cursor:pointer;color:var(--ink);display:flex;align-items:center;justify-content:center;transition:all .2s;position:relative}
+.tools button svg{width:26px;height:26px}
+.tools button:hover{background:var(--lav-l)}
+.tools button.on{background:var(--lav);color:var(--lav-d);box-shadow:inset 0 0 0 3px var(--lav-d)}
+.tools .sw{width:30px;height:30px;border-radius:50%;border:4px solid #fff;box-shadow:0 0 0 2px var(--line)}
+.tools button.swb.on{background:transparent;box-shadow:none}
+.tools button.swb.on .sw{box-shadow:0 0 0 4px var(--ink)}
+.tools .sep{width:2px;height:34px;background:var(--line);margin:0 4px}
+.tools button[data-tip]:hover::after,.bar button[data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:72px;left:50%;transform:translateX(-50%);white-space:nowrap;background:var(--ink);color:#fff;font-size:18px;font-weight:700;padding:4px 12px;border-radius:10px}
+
+/* ---------- table of contents ---------- */
+#toc{position:absolute;inset:0;z-index:40;background:rgba(74,63,79,.28);display:none;align-items:center;justify-content:center}
+#stage.toc-open #toc{display:flex}
+.tocbox{width:1600px;background:var(--cream);border-radius:40px;padding:40px 48px;box-shadow:0 20px 60px rgba(74,63,79,.25);border:4px solid #fff;animation:pageIn .35s cubic-bezier(.2,.8,.3,1)}
+.tocbox h2{margin:0 0 6px;font-size:44px;font-weight:800;display:flex;align-items:center;gap:16px}
+.tocbox .sub{font-size:22px;color:var(--ink2);margin-bottom:26px}
+.tocgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.tocitem{display:flex;align-items:center;gap:16px;background:var(--paper);border-radius:24px;padding:14px 18px;box-shadow:var(--shadow-s);font-size:25px;font-weight:700;border:3px solid transparent}
+.tocitem.cur{border-color:var(--lav-d)}
+.tocitem .n{flex:none;width:52px;height:52px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800}
+.tocitem .name{flex:1;min-width:0}
+.tocitem .meta{display:block;font-size:18px;color:var(--ink2);font-weight:700;margin-top:2px}
+.tocitem .go{display:flex;flex-direction:column;gap:6px;flex:none}
+.tocitem .go button{font-family:inherit;font-size:17px;font-weight:800;border:0;border-radius:16px;padding:3px 12px;cursor:pointer}
+.tocitem .go .c{background:var(--sky);color:var(--sky-d)}
+.tocitem .go .p{background:var(--lemon);color:var(--lemon-d)}
+.tocitem .go button:hover{transform:translateY(-2px)}
+
+/* ---------- chips inside a diagram ---------- */
+.chips{position:absolute;left:28px;top:20px;display:flex;gap:10px;align-items:center;z-index:2}
+.chips.right{left:auto;right:28px}
+.chips .lbl{font-size:21px;font-weight:800;background:var(--lemon);color:var(--lemon-d);border-radius:12px;padding:4px 12px}
+.chip{font:inherit;font-size:25px;font-weight:700;padding:5px 20px;border-radius:40px;border:3px solid var(--line);background:var(--paper);cursor:pointer;color:var(--ink2);transition:all .2s;box-shadow:0 3px 0 var(--line)}
+.chip.on{border-color:var(--sky-d);background:var(--sky);color:var(--sky-d);box-shadow:0 3px 0 var(--sky-d)}
+
+/* ---------- topic 2: frequency ---------- */
+.freqTop{display:flex;align-items:center;gap:30px;margin:10px 10px 0}
+.freqTop .rng{flex:1}
+.freqRow{display:flex;justify-content:space-between;font-size:27px;margin-top:6px;gap:6px}
+.freqRow span{flex:1;text-align:center;color:var(--ink2);cursor:pointer;padding:5px 0;border-radius:20px;font-weight:700;transition:all .2s}
+.freqRow span.on{color:var(--peach-d);background:var(--peach);font-weight:800}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;border-radius:12px;background:linear-gradient(90deg,var(--line),var(--peach));outline:none;margin:14px 0 4px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:52px;height:52px;border-radius:50%;background:var(--peach-d);border:7px solid #fff;box-shadow:0 0 0 4px var(--peach),0 6px 12px rgba(192,102,42,.3);cursor:grab}
+input[type=range]::-moz-range-thumb{width:40px;height:40px;border-radius:50%;background:var(--peach-d);border:7px solid #fff;box-shadow:0 0 0 4px var(--peach);cursor:grab}
+.bigpct{font-size:72px;font-weight:800;color:var(--peach-d);line-height:1;width:200px;text-align:right}
+.weekWrap{flex:1;display:flex;flex-direction:column;justify-content:center;gap:24px;padding:0 10px}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:18px}
+.day{border-radius:28px;background:var(--cream);height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-size:28px;font-weight:800;color:var(--ink3);transition:all .35s cubic-bezier(.3,1.4,.5,1);border:3px solid var(--line)}
+.day .mark{width:80px;height:80px;border-radius:50%;border:4px dashed var(--ink3);display:flex;align-items:center;justify-content:center;transition:all .35s cubic-bezier(.3,1.4,.5,1)}
+.day .mark svg{width:44px;height:44px;opacity:0;transition:opacity .2s}
+.day.on{background:var(--sky-l);border-color:var(--sky);color:var(--sky-d);transform:translateY(-6px);box-shadow:0 8px 0 var(--sky)}
+.day.on .mark{background:var(--sky-d);border:4px solid #fff;box-shadow:0 0 0 4px var(--sky)}
+.day.on .mark svg{opacity:1}
+.pctbar{height:30px;border-radius:16px;background:var(--cream);overflow:hidden;border:3px solid var(--line)}
+.pctbar div{height:100%;border-radius:16px;background:repeating-linear-gradient(-45deg,var(--peach) 0 14px,#ffcfae 14px 28px);transition:width .45s cubic-bezier(.3,1.3,.5,1)}
+
+/* ---------- topic 10: tense map ---------- */
+.tmap{flex:1;display:flex;gap:30px;align-items:stretch;min-height:0}
+.tgrid{width:900px;display:grid;grid-template-columns:110px repeat(3,1fr);grid-auto-rows:1fr;gap:12px;padding:6px 0}
+.tgrid .h{font-size:25px;font-weight:800;color:var(--ink2);display:flex;align-items:center;justify-content:center;border-radius:16px}
+.tgrid .h.col{background:var(--cream)}
+.tcell{border:3px solid var(--line);background:var(--cream);border-radius:22px;padding:10px;font-size:26px;font-weight:800;cursor:pointer;font-family:inherit;color:var(--ink);line-height:1.25;transition:all .2s}
+.tcell small{display:block;font-size:18px;color:var(--ink2);font-family:"Nunito",sans-serif;margin-top:4px}
+.tcell:hover{transform:translateY(-2px)}
+.tcell.on{background:var(--sky);border-color:var(--sky-d);color:var(--sky-d)}
+.tcell.on small{color:var(--sky-d)}
+.tcell.lock{opacity:.4;cursor:default;border-style:dashed}
+.tcell.lock:hover{transform:none}
+.tdetail{flex:1;display:flex;flex-direction:column;gap:10px;background:var(--cream);border-radius:28px;padding:20px 24px;min-width:0}
+.tdetail .nm{font-size:40px;font-weight:800;color:var(--sky-d)}
+.tdetail .fm{font-size:30px;font-weight:800;color:var(--ink)}
+.tdetail svg{flex:1;min-height:0;width:100%}
+
+/* ---------- topic 11: three steps ---------- */
+.steps{flex:1;display:grid;grid-template-columns:1fr 1.7fr 1fr;gap:26px;margin-top:66px;min-height:0}
+.stepc{background:var(--cream);border-radius:30px;padding:22px 26px;display:flex;flex-direction:column;gap:14px;border:3px solid var(--line);min-height:0}
+.stepc h4{margin:0;font-size:28px;font-weight:800;display:flex;align-items:center;gap:12px}
+.stepc h4 b{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px}
+.stepc:nth-child(1) h4 b{background:var(--pink);color:var(--pink-d)}
+.stepc:nth-child(2) h4 b{background:var(--mint);color:var(--mint-d)}
+.stepc:nth-child(3) h4 b{background:var(--sky);color:var(--sky-d)}
+.stepc .big{font-size:36px;font-weight:800;line-height:1.35}
+.stepc .small{font-size:24px;color:var(--ink2);font-weight:700}
+.stepc svg{flex:1;min-height:0;width:100%}
+</style>
+</head>
+<body>
+<div id="viewport"><div id="stage">
+  <header>
+    <button class="tag" id="bToc"><span class="dots"><i style="background:var(--pink)"></i><i style="background:var(--sky)"></i><i style="background:var(--mint)"></i></span>目錄<kbd>M</kbd></button>
+    <div class="title"><span class="kind" id="hKind"></span><span id="hTitle"></span></div>
+    <div class="ref" id="hRef"></div>
+  </header>
+  <div id="pausedBadge">❚❚ 已暫停</div>
+  <main id="main"></main>
+  <canvas id="ink" width="1920" height="1080"></canvas>
+  <div id="toc"><div class="tocbox">
+    <h2>目錄 <span style="font-size:22px;background:var(--lav);color:var(--lav-d);border-radius:30px;padding:4px 16px">共 N 個主題</span></h2>
+    <div class="sub">每個主題分成「概念」和「練習」兩頁。數字鍵 1～9、0 可直接跳到主題。按 M 或 Esc 關閉。</div>
+    <div class="tocgrid" id="tocGrid"></div>
+  </div></div>
+  <footer>
+    <div class="tools" id="tools">
+      <button data-tool="pointer" data-tip="操作 (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M5 3l14 8-6 1.5L10 19z"/></svg></button>
+      <button data-tool="laser" data-tip="雷射筆 (L)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="4" fill="#e8476f" stroke="#e8476f"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></button>
+      <button data-tool="pen" data-tip="畫筆 (D)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1L19 8a2.1 2.1 0 0 0-3-3L5 16z"/><path d="M14 7l3 3"/></svg></button>
+      <span id="swatches" style="display:flex"></span>
+      <button data-tool="eraser" data-tip="橡皮擦 (E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 20h12"/><path d="M4.5 15.5l9-9a2 2 0 0 1 2.8 0l2.2 2.2a2 2 0 0 1 0 2.8L11 19H8z"/><path d="M9 11l5 5"/></svg></button>
+      <span class="sep"></span>
+      <button id="bTrash" data-tip="清除本頁筆跡 (C)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>
+    </div>
+    <div class="bar">
+      <button id="bPrev" data-tip="上一頁 (←)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <span class="sep"></span>
+      <button id="bPlay" data-tip="自動示範 (P)"></button>
+      <button id="bReset" data-tip="重設本頁 (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/></svg>重設</button>
+      <button id="bZoom" data-tip="只看圖解 (F)"></button>
+      <span class="sep"></span>
+      <button id="bNext" data-tip="下一頁 (→)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
+    </div>
+    <div class="pagedots" id="pageDots"></div>
+  </footer>
+</div></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const NS = 'http://www.w3.org/2000/svg';
+const C = {
+  pink:'#f8cdd8', pinkD:'#c4587c', pinkL:'#fdeef2',
+  sky:'#c4e2f8', skyD:'#3a78b0', skyL:'#ebf5fd',
+  peach:'#ffd8bd', peachD:'#c0662a', peachL:'#fff1e6',
+  mint:'#c3ecd9', mintD:'#2f8a66', mintL:'#ebf8f1',
+  lav:'#dcd2f7', lavD:'#6d58b8', lavL:'#f3effd',
+  line:'#efe4ea', ink:'#4a3f4f', ink2:'#857a8a', ink3:'#c2b8c4',
+};
+const ICON = {
+  play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>',
+  pause:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16" rx="2"/><rect x="14" y="4" width="5" height="16" rx="2"/></svg>',
+  zoom:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  bulb:'<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>',
+};
+const rnd = n => Math.floor(Math.random() * n);
+const pick = a => a[rnd(a.length)];
+function el(tag, attrs = {}, parent, text) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text != null) e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function clear(g) { while (g.firstChild) g.firstChild.remove(); }
+function svgPoint(svg, evt) {
+  const p = svg.createSVGPoint(); p.x = evt.clientX; p.y = evt.clientY;
+  return p.matrixTransform(svg.getScreenCTM().inverse());
+}
+function dragOn(target, svg, onMove) {
+  target.addEventListener('pointerdown', e => {
+    e.preventDefault(); target.setPointerCapture(e.pointerId);
+    const start = svgPoint(svg, e);
+    App.pauseForUser();
+    const move = ev => onMove(svgPoint(svg, ev), start);
+    const up = () => { target.removeEventListener('pointermove', move); target.removeEventListener('pointerup', up); };
+    target.addEventListener('pointermove', move);
+    target.addEventListener('pointerup', up);
+  });
+}
+function makeChips(host, label, items, onPick, cls = '') {
+  host.className = 'chips ' + cls;
+  host.innerHTML = label ? `<span class="lbl">${label}</span>` : '';
+  items.forEach((it, i) => {
+    const b = document.createElement('button');
+    b.className = 'chip en'; b.textContent = it;
+    b.onclick = () => { App.pauseForUser(); onPick(i); };
+    host.appendChild(b);
+  });
+  return i => [...host.querySelectorAll('.chip')].forEach((c, j) => c.classList.toggle('on', i === j));
+}
+function chipsIn(diagram, label, items, onPick, cls) {
+  const h = document.createElement('div'); diagram.appendChild(h);
+  return makeChips(h, label, items, onPick, cls);
+}
+/* text width estimate for pills (CJK ≈ full em, latin ≈ half em) */
+const textW = (t, fs) => [...t].reduce((w, ch) => w + (ch.charCodeAt(0) > 255 ? fs : fs * .56), 0);
+const blank = (ph, ans = []) => `<input class="blank" size="${Math.max(ph.length, ...ans.map(a => a.length)) + 1}" placeholder="${ph}" autocomplete="off" spellcheck="false">`;
+const V = s => `<span class="v">${s}</span>`;
+const T = s => `<span class="t">${s}</span>`;
+
+
+/* ================= [TEMPLATE] Subject-specific part: replace everything in this block =================
+   1. DEFS: one row per topic -> [topicNo, conceptTitle, conceptRef, practiceTitle, practiceRef]
+   2. TOPIC_NAMES: short names for the table of contents (same order as DEFS)
+   3. CTRL['<topic>_1'] = concept controller, CTRL['<topic>_2'] = practice controller
+   See references/controller-contract.md for the exact contract. The demo below is a
+   minimal "slider changes the sentence" topic so the template runs out of the box. */
+const DEFS = [
+  [1, 'DEMO 概念標題', '課本 p.X', 'DEMO 看圖填空', '課本 p.X'],
+];
+const TOPIC_NAMES = ['DEMO 主題'];
+(() => {
+  const main = $('#main');
+  DEFS.forEach(([tp, ct, cr, pt, pr]) => {
+    [['concept', ct, cr, 1], ['practice', pt, pr, 2]].forEach(([kind, title, ref, k]) => {
+      const s = document.createElement('section');
+      s.className = 'slide';
+      Object.assign(s.dataset, { topic: tp, kind, title, ref, k });
+      s.innerHTML = `<div class="diagram" id="d${tp}_${k}"></div><div class="below"><div class="sentence en" id="s${tp}_${k}"></div></div>`;
+      main.appendChild(s);
+    });
+  });
+})();
+const D = (tp, k) => $(`#d${tp}_${k}`);
+const SEN = (tp, k) => $(`#s${tp}_${k}`);
+function svgIn(host, vb = '0 0 1600 560') { const s = el('svg', {viewBox: vb}); host.appendChild(s); return s; }
+const CTRL = {};
+
+/* DEMO concept: drag the slider -> the dot moves and the sentence changes */
+CTRL['1_1'] = (() => {
+  const svg = svgIn(D(1,1));
+  el('line', {x1:150, y1:300, x2:1450, y2:300, stroke:C.ink3, 'stroke-width':12, 'stroke-linecap':'round'}, svg);
+  const dot = el('circle', {cy:300, r:44, fill:C.peach, stroke:'#fff', 'stroke-width':8, class:'drag'}, svg);
+  let x = 800;
+  dragOn(dot, svg, p => { x = Math.max(150, Math.min(1450, p.x)); render(); });
+  function render() {
+    dot.setAttribute('cx', x);
+    const left = x < 800;
+    SEN(1,1).innerHTML = `The dot is on the ${T(left ? 'left' : 'right')} side.`;
+  }
+  return { render,
+    explain: () => `<ol><li><span>把「學生操作什麼 → 畫面怎麼變」寫在這裡</span></li></ol>`,
+    reset() { x = 800; render(); } };
+})();
+
+/* DEMO practice: the blank lives inside the sentence under the diagram */
+CTRL['1_2'] = (() => {
+  const svg = svgIn(D(1,2));
+  el('line', {x1:150, y1:300, x2:1450, y2:300, stroke:C.ink3, 'stroke-width':12, 'stroke-linecap':'round'}, svg);
+  const dot = el('circle', {cy:300, r:44, fill:C.peach, stroke:'#fff', 'stroke-width':8}, svg);
+  let left = true;
+  const ans = () => [left ? 'left' : 'right'];
+  function render() { dot.setAttribute('cx', left ? 450 : 1150); SEN(1,2).innerHTML = `The dot is on the ${blank('left / right', ans())} side.`; }
+  return { render, answers: () => [ans()],
+    explain: () => `<ol><li><span>先看圖，再說明為什麼答案是這個</span></li></ol>`,
+    randomize() { left = !left; render(); },
+    reset() { left = true; render(); } };
+})();
+
+
+/* ================= Drawing tools ================= */
+const Ink = (() => {
+  const cv = $('#ink'), ctx = cv.getContext('2d'), stage = $('#stage');
+  const COLORS = [['#e8476f','桃紅'],['#3a78b0','藍'],['#2f8a66','綠'],['#e08a1e','橘'],['#6d58b8','紫']];
+  const strokes = {};
+  let page = 0, tool = 'pointer', color = COLORS[0][0], cur = null, laser = [], raf = null;
+  COLORS.forEach(([c, n]) => {
+    const b = document.createElement('button');
+    b.className = 'swb'; b.dataset.color = c; b.dataset.tip = n + '色畫筆';
+    b.innerHTML = `<span class="sw" style="background:${c}"></span>`;
+    b.onclick = () => { color = c; setTool('pen'); };
+    $('#swatches').appendChild(b);
+  });
+  document.querySelectorAll('#tools [data-tool]').forEach(b => b.onclick = () => setTool(tool === b.dataset.tool && b.dataset.tool !== 'pointer' ? 'pointer' : b.dataset.tool));
+  $('#bTrash').onclick = clearInk;
+  function list() { return strokes[page] || (strokes[page] = []); }
+  function setTool(t) {
+    tool = t;
+    stage.classList.remove('t-pen', 't-eraser', 't-laser');
+    stage.classList.toggle('drawing', t !== 'pointer');
+    if (t !== 'pointer') stage.classList.add('t-' + t);
+    document.querySelectorAll('#tools [data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t));
+    document.querySelectorAll('#swatches .swb').forEach(b => b.classList.toggle('on', t === 'pen' && b.dataset.color === color));
+    laser = []; redraw();
+  }
+  function pos(e) {
+    const r = cv.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * 1920 / r.width, y: (e.clientY - r.top) * 1080 / r.height, t: performance.now() };
+  }
+  function drawStroke(s) {
+    ctx.strokeStyle = s.color; ctx.lineWidth = s.w; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    s.pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+    if (s.pts.length === 1) ctx.lineTo(s.pts[0].x + .1, s.pts[0].y);
+    ctx.stroke();
+  }
+  function redraw() {
+    ctx.clearRect(0, 0, 1920, 1080);
+    list().forEach(drawStroke);
+    if (tool === 'laser' && laser.length) {
+      const now = performance.now();
+      laser = laser.filter(p => now - p.t < 700);
+      for (let i = 1; i < laser.length; i++) {
+        const a = 1 - (now - laser[i].t) / 700;
+        ctx.strokeStyle = `rgba(232,71,111,${a * .55})`; ctx.lineWidth = 14 * a + 2; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(laser[i-1].x, laser[i-1].y); ctx.lineTo(laser[i].x, laser[i].y); ctx.stroke();
+      }
+      const h = laser[laser.length - 1];
+      if (h) {
+        ctx.fillStyle = 'rgba(232,71,111,.25)'; ctx.beginPath(); ctx.arc(h.x, h.y, 26, 0, 7); ctx.fill();
+        ctx.fillStyle = '#e8476f'; ctx.beginPath(); ctx.arc(h.x, h.y, 11, 0, 7); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(h.x - 3, h.y - 3, 3.5, 0, 7); ctx.fill();
+      }
+    }
+  }
+  function laserLoop() { redraw(); raf = laser.length ? requestAnimationFrame(laserLoop) : null; }
+  function eraseAt(p) {
+    const L = list(), R = 26;
+    for (let i = L.length - 1; i >= 0; i--)
+      if (L[i].pts.some(q => Math.hypot(q.x - p.x, q.y - p.y) < R + L[i].w / 2)) L.splice(i, 1);
+    redraw();
+  }
+  cv.addEventListener('pointerdown', e => {
+    cv.setPointerCapture(e.pointerId);
+    const p = pos(e);
+    if (tool === 'pen') { cur = { color, w: 7, pts: [p] }; list().push(cur); redraw(); }
+    else if (tool === 'eraser') { cur = 'erasing'; eraseAt(p); }
+  });
+  cv.addEventListener('pointermove', e => {
+    const p = pos(e);
+    if (tool === 'laser') { laser.push(p); if (!raf) raf = requestAnimationFrame(laserLoop); return; }
+    if (!cur) return;
+    if (tool === 'pen') { cur.pts.push(p); redraw(); }
+    else if (tool === 'eraser') eraseAt(p);
+  });
+  const end = () => { cur = null; };
+  cv.addEventListener('pointerup', end);
+  cv.addEventListener('pointercancel', end);
+  function clearInk() { strokes[page] = []; redraw(); }
+  setTool('pointer');
+  return {
+    setTool, clear: clearInk,
+    get tool() { return tool; },
+    setPage(i) { page = i; laser = []; redraw(); },
+  };
+})();
+
+/* ================= App / teacher controls ================= */
+const App = (() => {
+  const slides = [...document.querySelectorAll('.slide')];
+  const ctrls = slides.map(s => CTRL[`${s.dataset.topic}_${s.dataset.k}`]);
+  const score = slides.map(() => ({ ok: 0, total: 0 }));
+  let cur = 0, playing = false;
+  const stage = $('#stage');
+  const isPractice = i => slides[i].dataset.kind === 'practice';
+
+  const UI = slides.map((sl, i) => {
+    const diag = sl.querySelector('.diagram');
+    if (!isPractice(i)) {
+      const exbtn = document.createElement('button');
+      exbtn.className = 'exbtn'; exbtn.innerHTML = ICON.bulb + '講解 <kbd>H</kbd>';
+      exbtn.onclick = () => toggleExplain(true);
+      diag.appendChild(exbtn);
+    }
+    const ex = document.createElement('div');
+    ex.className = 'explain';
+    ex.innerHTML = `<div class="exbox"><button class="close" aria-label="關閉">✕</button><h3>講解 <span>${isPractice(i) ? '這一題' : '重點整理'}</span></h3><div class="exbody"></div></div>`;
+    ex.onclick = e => { if (e.target === ex || e.target.classList.contains('close')) toggleExplain(false); };
+    sl.appendChild(ex);
+    let fb = null, exb = null, row = null;
+    if (isPractice(i)) {
+      row = document.createElement('div');
+      row.className = 'actions';
+      row.innerHTML = `<button class="go">對答案 <kbd>Enter</kbd></button><span class="fb"></span><button class="ex">${ICON.bulb}講解 <kbd>H</kbd></button><button class="see">看答案</button><button class="ask">${ctrls[i].askLabel || '換一題'} <kbd>Q</kbd></button><span class="score"></span>`;
+      sl.querySelector('.below').appendChild(row);
+      row.querySelector('.go').onclick = () => check(i);
+      row.querySelector('.ask').onclick = () => ask(i);
+      row.querySelector('.see').onclick = () => showAnswer(i);
+      row.querySelector('.ex').onclick = () => toggleExplain(true);
+      fb = row.querySelector('.fb'); exb = row.querySelector('.ex');
+    }
+    return { ex, fb, exb, row };
+  });
+
+  function blanks(i) { return [...slides[i].querySelectorAll('input.blank')]; }
+  function feedback(i, cls, text) { UI[i].fb.className = 'fb ' + cls; UI[i].fb.textContent = text; }
+  function renderScore(i) { if (UI[i].row) UI[i].row.querySelector('.score').innerHTML = `答對 <b>${score[i].ok}</b> / ${score[i].total}`; }
+  const norm = t => t.toLowerCase().replace(/[’‘]/g, "'").replace(/[.,!?。，]/g, '').replace(/\s+/g, ' ').trim();
+  function wireBlanks(i) {
+    blanks(i).forEach(b => b.addEventListener('input', () => { b.classList.remove('ok', 'bad'); feedback(i, '', ''); }));
+  }
+  function check(i) {
+    const ins = blanks(i), vals = ins.map(x => x.value);
+    const empty = ins.find(x => !norm(x.value));
+    if (empty) { feedback(i, 'bad', '先填入學生的答案'); empty.focus(); return; }
+    const ans = ctrls[i].answers();
+    const each = vals.map((v, j) => ans[j].map(norm).includes(norm(v)));
+    ins.forEach((x, j) => { x.classList.remove('ok', 'bad'); void x.offsetWidth; x.classList.add(each[j] ? 'ok' : 'bad'); });
+    score[i].total++;
+    if (each.every(Boolean)) { score[i].ok++; feedback(i, 'ok', '✔ 答對了！'); }
+    else feedback(i, 'bad', '再想想，或打開講解');
+    UI[i].exb.classList.add('ready');
+    renderScore(i);
+  }
+  function showAnswer(i) {
+    const ans = ctrls[i].answers();
+    blanks(i).forEach((x, j) => { x.value = ans[j][0]; x.classList.remove('bad'); x.classList.add('ok'); });
+    feedback(i, 'show', ans.some(a => a.length > 1) ? '也可以寫：' + ans.map(a => a.slice(1).join('、')).join(' ') : '這是答案');
+    UI[i].exb.classList.add('ready');
+  }
+  function ask(i) {
+    if (!isPractice(i)) return;
+    toggleExplain(false);
+    ctrls[i].randomize(); wireBlanks(i);
+    feedback(i, '', ''); UI[i].exb.classList.remove('ready');
+    blanks(i)[0].focus();
+  }
+  function toggleExplain(force) {
+    const sl = slides[cur];
+    const open = force ?? !sl.classList.contains('exopen');
+    if (open) { UI[cur].ex.querySelector('.exbody').innerHTML = ctrls[cur].explain(); setPlaying(false); }
+    sl.classList.toggle('exopen', open);
+  }
+
+  /* table of contents */
+  const tints = [['var(--pink)','var(--pink-d)'],['var(--sky)','var(--sky-d)'],['var(--mint)','var(--mint-d)'],['var(--peach)','var(--peach-d)'],['var(--lav)','var(--lav-d)']];
+  DEFS.forEach(([no, , ref], k) => {
+    const c = slides.findIndex(s => +s.dataset.topic === no && s.dataset.kind === 'concept');
+    const item = document.createElement('div');
+    item.className = 'tocitem'; item.dataset.topic = no;
+    const [bg, fg] = tints[k % tints.length];
+    item.innerHTML = `<span class="n en" style="background:${bg};color:${fg}">${no}</span><span class="name">${TOPIC_NAMES[k]}<span class="meta">${ref}</span></span><span class="go"><button class="c">概念</button><button class="p">練習</button></span>`;
+    item.querySelector('.c').onclick = () => { go(c); toggleToc(false); };
+    item.querySelector('.p').onclick = () => { go(c + 1); toggleToc(false); };
+    $('#tocGrid').appendChild(item);
+  });
+  function toggleToc(force) {
+    const open = force ?? !stage.classList.contains('toc-open');
+    stage.classList.toggle('toc-open', open);
+    document.querySelectorAll('.tocitem').forEach(t => t.classList.toggle('cur', +t.dataset.topic === +slides[cur].dataset.topic));
+  }
+  $('#bToc').onclick = () => toggleToc();
+
+  slides.forEach((s, i) => {
+    const d = document.createElement('i');
+    if (i > 0 && s.dataset.topic !== slides[i-1].dataset.topic) d.className = 'gap';
+    d.title = `${s.dataset.topic}-${s.dataset.k} ${s.dataset.title}`; d.onclick = () => go(i); $('#pageDots').appendChild(d);
+  });
+
+  function setPlaying(on) {
+    playing = on;
+    ctrls[cur].stop && ctrls[cur].stop();
+    if (on && ctrls[cur].play) ctrls[cur].play();
+    $('#bPlay').innerHTML = (on ? ICON.pause + '暫停' : ICON.play + '播放');
+    $('#bPlay').classList.toggle('on', on);
+    $('#bPlay').style.display = ctrls[cur].play ? '' : 'none';
+    stage.classList.remove('paused');
+  }
+  function go(i) {
+    if (i < 0 || i >= slides.length) return;
+    setPlaying(false);
+    slides[cur].classList.remove('active', 'exopen');
+    cur = i;
+    const s = slides[cur];
+    s.classList.add('active');
+    $('#hTitle').textContent = s.dataset.title;
+    const k = $('#hKind'); k.className = 'kind ' + s.dataset.kind;
+    k.textContent = `${s.dataset.topic}-${s.dataset.k} ${s.dataset.kind === 'concept' ? '概念' : '練習'}`;
+    $('#hRef').textContent = s.dataset.ref;
+    [...$('#pageDots').children].forEach((d, j) => d.classList.toggle('on', j === cur));
+    Ink.setPage(cur);
+    setPlaying(false);
+  }
+  function reset() {
+    setPlaying(false); toggleExplain(false); ctrls[cur].reset();
+    if (isPractice(cur)) { wireBlanks(cur); feedback(cur, '', ''); score[cur] = { ok: 0, total: 0 }; renderScore(cur); UI[cur].exb.classList.remove('ready'); }
+  }
+  function togglePlay() {
+    if (!ctrls[cur].play) return;
+    if (playing) { setPlaying(false); stage.classList.add('paused'); }
+    else setPlaying(true);
+  }
+  function renderZoom() { const z = stage.classList.contains('zoom'); $('#bZoom').classList.toggle('on', z); $('#bZoom').innerHTML = ICON.zoom + (z ? '還原' : '放大'); }
+  function toggleZoom() { stage.classList.toggle('zoom'); renderZoom(); }
+
+  $('#bPrev').onclick = () => go(cur - 1);
+  $('#bNext').onclick = () => go(cur + 1);
+  $('#bPlay').onclick = togglePlay;
+  $('#bReset').onclick = reset;
+  $('#bZoom').onclick = toggleZoom;
+  document.addEventListener('keydown', e => {
+    if (e.target.classList && e.target.classList.contains('blank')) {
+      if (e.key === 'Enter') { e.preventDefault(); check(cur); }
+      else if (e.key === 'Escape') e.target.blur();
+      return;
+    }
+    if (e.target.tagName === 'INPUT' && e.key.startsWith('Arrow')) return;
+    const k = e.key.toLowerCase();
+    if (stage.classList.contains('toc-open')) { if (k === 'escape' || k === 'm') toggleToc(false); e.preventDefault(); return; }
+    if (k === 'escape' && slides[cur].classList.contains('exopen')) toggleExplain(false);
+    else if (k === 'm') toggleToc(true);
+    else if (k === 'h') toggleExplain();
+    else if (k === 'escape') Ink.setTool('pointer');
+    else if (k === 'l') Ink.setTool(Ink.tool === 'laser' ? 'pointer' : 'laser');
+    else if (k === 'd') Ink.setTool(Ink.tool === 'pen' ? 'pointer' : 'pen');
+    else if (k === 'e') Ink.setTool(Ink.tool === 'eraser' ? 'pointer' : 'eraser');
+    else if (k === 'c') Ink.clear();
+    else if (k === 'arrowright' || k === 'pagedown') go(cur + 1);
+    else if (k === 'arrowleft' || k === 'pageup') go(cur - 1);
+    else if (k === 'q') ask(cur);
+    else if (k === 'enter' && isPractice(cur)) check(cur);
+    else if (k === 'p') togglePlay();
+    else if (k === 'r') reset();
+    else if (k === 'f') toggleZoom();
+    else if (/^[0-9]$/.test(k)) go(slides.findIndex(s => +s.dataset.topic === (k === '0' ? 10 : +k)));
+    else return;
+    e.preventDefault();
+    document.activeElement && document.activeElement.blur && document.activeElement.blur();
+  });
+
+  function fit() {
+    const sc = Math.min(innerWidth / 1920, innerHeight / 1080);
+    stage.style.transform = `scale(${sc})`;
+  }
+  addEventListener('resize', fit); fit();
+  ctrls.forEach((c, i) => { c.reset(); if (isPractice(i)) { wireBlanks(i); renderScore(i); } });
+  renderZoom();
+  go(0);
+  return {
+    pauseForUser() { if (playing) setPlaying(false); },
+    play() { setPlaying(true); },
+  };
+})();
+</script>
+</body>
+</html>
