@@ -11,12 +11,14 @@
 
 | 路徑 | 說明 |
 |---|---|
-| `tense-preview.html` | 成品範例：高職英文「時態系列」11 個主題、22 頁 |
+| `index.html` | 成品範例：高職英文「時態系列」11 個主題、22 頁 |
 | `.claude/skills/interactive-lesson-deck/` | Claude Skill：流程、設計原則、骨架樣板、各科圖解對照 |
 
 ## 使用成品範例
 
-直接用瀏覽器開啟 `tense-preview.html`。
+線上版：https://princejonathan.github.io/interactive-lesson-deck/
+
+或下載後直接用瀏覽器開啟 `index.html`。
 
 | 按鍵 | 功能 |
 |---|---|
