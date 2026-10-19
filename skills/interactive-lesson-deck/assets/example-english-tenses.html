@@ -1,0 +1,1550 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>時態系列</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#fdf7f0; --paper:#fffdfa; --ink:#4a3f4f; --ink2:#857a8a; --ink3:#c2b8c4; --line:#efe4ea;
+  --pink:#f8cdd8;  --pink-d:#c4587c;  --pink-l:#fdeef2;
+  --sky:#c4e2f8;   --sky-d:#3a78b0;   --sky-l:#ebf5fd;
+  --peach:#ffd8bd; --peach-d:#c0662a; --peach-l:#fff1e6;
+  --mint:#c3ecd9;  --mint-d:#2f8a66;  --mint-l:#ebf8f1;
+  --lav:#dcd2f7;   --lav-d:#6d58b8;   --lav-l:#f3effd;
+  --lemon:#faeeb2; --lemon-d:#97760d;
+  --shadow:0 6px 0 rgba(196,88,124,.06), 0 10px 28px rgba(109,88,184,.08);
+  --shadow-s:0 3px 0 rgba(109,88,184,.07), 0 6px 14px rgba(109,88,184,.07);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#e9dfe8;overflow:hidden;
+  font-family:"Nunito","Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif;color:var(--ink)}
+#viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#stage{width:1920px;height:1080px;position:relative;transform-origin:center center;flex:none;display:flex;flex-direction:column;
+  background:var(--cream);
+  background-image:radial-gradient(circle at 1px 1px, rgba(196,88,124,.10) 1.6px, transparent 0);background-size:34px 34px;overflow:hidden}
+#stage::before,#stage::after{content:"";position:absolute;border-radius:50%;z-index:0;pointer-events:none}
+#stage::before{width:520px;height:520px;background:var(--pink-l);top:-260px;left:-200px}
+#stage::after{width:620px;height:620px;background:var(--mint-l);bottom:-380px;right:-240px}
+header,main{position:relative;z-index:1}
+.en{font-family:"Nunito","Segoe UI",Arial,sans-serif}
+kbd{font-family:inherit;font-size:14px;color:var(--ink2);background:var(--cream);border:2px solid var(--line);border-radius:7px;padding:0 6px;font-weight:700}
+
+/* ---------- header ---------- */
+header{height:96px;display:flex;align-items:center;justify-content:space-between;padding:0 44px}
+.tag{display:flex;align-items:center;gap:12px;font-size:24px;font-weight:700;color:var(--lav-d);background:var(--paper);padding:10px 22px 10px 12px;border-radius:40px;box-shadow:var(--shadow-s);border:0;cursor:pointer;font-family:inherit}
+.tag:hover{background:var(--lav-l)}
+.tag .dots{display:flex;gap:5px}
+.tag .dots i{width:16px;height:16px;border-radius:50%;display:block}
+.title{font-size:40px;font-weight:800;letter-spacing:1px;display:flex;align-items:center;gap:16px}
+.kind{font-size:22px;border-radius:30px;padding:5px 18px}
+.kind.concept{background:var(--sky);color:var(--sky-d)}
+.kind.practice{background:var(--lemon);color:var(--lemon-d)}
+.ref{font-size:22px;font-weight:700;color:var(--peach-d);background:var(--peach-l);border:2px solid var(--peach);padding:8px 20px;border-radius:30px}
+
+/* ---------- slide layout: diagram in the middle, one line below ---------- */
+main{flex:1;min-height:0}
+.slide{position:absolute;inset:0 70px 6px;display:none;flex-direction:column;gap:20px}
+.slide.active{display:flex;animation:pageIn .45s cubic-bezier(.2,.8,.3,1)}
+@keyframes pageIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.diagram{flex:1;min-height:0;background:var(--paper);border-radius:36px;box-shadow:var(--shadow);border:3px solid #fff;position:relative;padding:22px 30px;display:flex;flex-direction:column}
+.diagram > svg{display:block;width:100%;height:100%;flex:1;min-height:0}
+.dhint{font-size:23px;font-weight:700;color:var(--ink2);display:flex;align-items:center;gap:10px}
+.dhint::before{content:"";width:12px;height:12px;border-radius:50%;background:var(--pink-d);box-shadow:0 0 0 6px var(--pink)}
+.qno{position:absolute;left:28px;top:20px;font-size:22px;font-weight:800;background:var(--lemon);color:var(--lemon-d);border-radius:16px;padding:5px 16px;z-index:2}
+.below{flex:none;display:flex;flex-direction:column;align-items:center;gap:14px;padding-bottom:4px}
+#stage.zoom .below{display:none}
+
+.sentence{font-size:56px;line-height:1.3;font-weight:800;text-align:center}
+.sentence.long{font-size:46px}
+.sentence .sub{display:block;font-size:32px;color:var(--ink2);font-weight:700;margin-top:4px;font-family:"Nunito","Microsoft JhengHei",sans-serif}
+.sentence .nope{text-decoration:line-through;text-decoration-thickness:5px;text-decoration-color:var(--pink-d);opacity:.45}
+.v{color:var(--sky-d);background:var(--sky-l);border:3px solid var(--sky);border-radius:16px;padding:0 12px}
+.t{color:var(--peach-d);background:var(--peach-l);border:3px solid var(--peach);border-radius:16px;padding:0 12px}
+input.blank{font-family:"Nunito",sans-serif;font-size:50px;font-weight:800;color:var(--ink);background:var(--lemon);border:0;border-bottom:5px solid var(--lemon-d);border-radius:16px 16px 6px 6px;padding:0 16px;outline:none;text-align:center;vertical-align:baseline;transition:all .2s}
+.sentence.long input.blank{font-size:42px}
+input.blank::placeholder{color:#c9b46a;font-weight:700}
+input.blank:focus{background:#fff6cf;box-shadow:0 0 0 4px var(--lav)}
+input.blank.ok{background:var(--mint);border-color:var(--mint-d);color:var(--mint-d)}
+input.blank.bad{background:var(--pink);border-color:var(--pink-d);color:var(--pink-d);animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+
+.actions{display:flex;align-items:center;gap:12px}
+.actions button{font-family:inherit;font-size:23px;font-weight:800;padding:9px 22px;border-radius:30px;border:0;cursor:pointer;background:var(--paper);color:var(--ink);box-shadow:0 3px 0 var(--line),var(--shadow-s);white-space:nowrap;display:flex;align-items:center;gap:8px}
+.actions button:hover{transform:translateY(-2px)}
+.actions .go{background:var(--mint);color:var(--mint-d)}
+.actions .ask{background:var(--pink);color:var(--pink-d)}
+.actions .ex.ready{background:var(--lav);color:var(--lav-d);animation:nudge 1.2s ease-in-out 2}
+@keyframes nudge{50%{transform:translateY(-5px)}}
+.fb{font-size:26px;font-weight:800;padding:6px 18px;border-radius:24px;display:none}
+.fb.ok{display:block;background:var(--mint-l);color:var(--mint-d)}
+.fb.bad{display:block;background:var(--pink-l);color:var(--pink-d)}
+.fb.show{display:block;background:var(--lav-l);color:var(--lav-d)}
+.score{font-size:20px;font-weight:700;color:var(--ink2);margin-left:6px}
+.score b{color:var(--mint-d);font-size:24px}
+
+.exbtn{position:absolute;right:22px;bottom:20px;font-family:inherit;font-size:22px;font-weight:800;padding:9px 20px;border-radius:30px;border:0;cursor:pointer;background:var(--lav-l);color:var(--lav-d);box-shadow:0 3px 0 var(--lav);display:flex;align-items:center;gap:8px;z-index:3}
+.exbtn:hover{background:var(--lav)}
+
+.explain{position:absolute;inset:-6px -40px;z-index:12;display:none;align-items:center;justify-content:center;background:rgba(253,247,240,.72);backdrop-filter:blur(3px)}
+.slide.exopen .explain{display:flex}
+.exbox{width:1240px;max-height:96%;overflow:hidden;background:var(--paper);border-radius:40px;padding:34px 48px 30px;box-shadow:0 20px 60px rgba(74,63,79,.18);border:4px solid var(--lav);animation:pageIn .35s cubic-bezier(.2,.8,.3,1);position:relative}
+.exbox h3{margin:0 0 18px;font-size:34px;font-weight:800;display:flex;align-items:center;gap:14px}
+.exbox h3 span{font-size:20px;background:var(--lav);color:var(--lav-d);border-radius:20px;padding:3px 14px}
+.exbox .close{position:absolute;right:26px;top:24px;width:52px;height:52px;border-radius:50%;border:0;background:var(--cream);font-size:28px;cursor:pointer;color:var(--ink2)}
+.exbody{font-size:31px;line-height:1.6;font-weight:700}
+.exbody ol{margin:0;padding:0;list-style:none;counter-reset:n;display:flex;flex-direction:column;gap:14px}
+.exbody li{counter-increment:n;display:flex;gap:16px;align-items:flex-start}
+.exbody li::before{content:counter(n);flex:none;width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;margin-top:2px;background:var(--pink);color:var(--pink-d)}
+.exbody li:nth-child(2)::before{background:var(--mint);color:var(--mint-d)}
+.exbody li:nth-child(3)::before{background:var(--sky);color:var(--sky-d)}
+.exbody li:nth-child(4)::before{background:var(--peach);color:var(--peach-d)}
+.exbody table{border-collapse:separate;border-spacing:0 8px;font-size:28px;width:100%}
+.exbody td{padding:6px 18px;background:var(--cream)}
+.exbody td:first-child{border-radius:14px 0 0 14px}
+.exbody td:last-child{border-radius:0 14px 14px 0}
+.exbody tr.hl td{background:var(--sky);color:var(--sky-d)}
+.exbody .arrow{color:var(--ink3)}
+.exbody .note{margin-top:14px;font-size:27px;color:var(--ink2)}
+
+svg text{font-family:"Nunito","Microsoft JhengHei","Noto Sans TC",sans-serif;font-weight:700}
+svg,.week,.freqRow,header,footer,.tgrid,.steps{user-select:none;-webkit-user-select:none}
+svg{touch-action:none}
+.drag{cursor:grab}
+.drag:active{cursor:grabbing}
+.click{cursor:pointer}
+
+/* ---------- footer ---------- */
+footer{position:relative;z-index:30;height:96px;display:flex;align-items:center;justify-content:space-between;padding:0 36px;gap:16px}
+.bar{display:flex;align-items:center;gap:6px;background:var(--paper);border-radius:50px;padding:10px 12px;box-shadow:var(--shadow)}
+.bar button{position:relative;white-space:nowrap;font:inherit;font-size:21px;font-weight:700;display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:40px;border:0;background:transparent;cursor:pointer;color:var(--ink);transition:all .2s}
+.bar button:hover{background:var(--lav-l)}
+.bar button svg{width:22px;height:22px}
+.bar .sep{width:2px;height:34px;background:var(--line);margin:0 4px}
+.bar button.on{background:var(--lav);color:var(--lav-d)}
+.pagedots{display:flex;gap:7px;align-items:center}
+.pagedots i{width:13px;height:13px;border-radius:10px;background:var(--line);cursor:pointer;transition:all .3s}
+.pagedots i.on{width:36px;background:var(--lav-d)}
+.pagedots i.gap{margin-left:9px}
+#pausedBadge{position:absolute;top:110px;left:50%;transform:translateX(-50%);font-size:24px;font-weight:800;background:var(--lav-d);color:#fff;padding:8px 26px;border-radius:30px;display:none;z-index:5;box-shadow:var(--shadow)}
+#stage.paused #pausedBadge{display:block}
+
+/* ---------- drawing tools ---------- */
+#ink{position:absolute;inset:0;z-index:20;pointer-events:none}
+#stage.drawing #ink{pointer-events:auto}
+#stage.t-pen #ink{cursor:crosshair}
+#stage.t-eraser #ink{cursor:cell}
+#stage.t-laser #ink{cursor:none}
+.tools{display:flex;align-items:center;gap:4px;background:var(--paper);border-radius:50px;padding:8px 10px;box-shadow:var(--shadow)}
+.tools button{font:inherit;width:54px;height:54px;border-radius:50%;border:0;background:transparent;cursor:pointer;color:var(--ink);display:flex;align-items:center;justify-content:center;transition:all .2s;position:relative}
+.tools button svg{width:26px;height:26px}
+.tools button:hover{background:var(--lav-l)}
+.tools button.on{background:var(--lav);color:var(--lav-d);box-shadow:inset 0 0 0 3px var(--lav-d)}
+.tools .sw{width:30px;height:30px;border-radius:50%;border:4px solid #fff;box-shadow:0 0 0 2px var(--line)}
+.tools button.swb.on{background:transparent;box-shadow:none}
+.tools button.swb.on .sw{box-shadow:0 0 0 4px var(--ink)}
+.tools .sep{width:2px;height:34px;background:var(--line);margin:0 4px}
+.tools button[data-tip]:hover::after,.bar button[data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:72px;left:50%;transform:translateX(-50%);white-space:nowrap;background:var(--ink);color:#fff;font-size:18px;font-weight:700;padding:4px 12px;border-radius:10px}
+
+/* ---------- table of contents ---------- */
+#toc{position:absolute;inset:0;z-index:40;background:rgba(74,63,79,.28);display:none;align-items:center;justify-content:center}
+#stage.toc-open #toc{display:flex}
+.tocbox{width:1600px;background:var(--cream);border-radius:40px;padding:40px 48px;box-shadow:0 20px 60px rgba(74,63,79,.25);border:4px solid #fff;animation:pageIn .35s cubic-bezier(.2,.8,.3,1)}
+.tocbox h2{margin:0 0 6px;font-size:44px;font-weight:800;display:flex;align-items:center;gap:16px}
+.tocbox .sub{font-size:22px;color:var(--ink2);margin-bottom:26px}
+.tocgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.tocitem{display:flex;align-items:center;gap:16px;background:var(--paper);border-radius:24px;padding:14px 18px;box-shadow:var(--shadow-s);font-size:25px;font-weight:700;border:3px solid transparent}
+.tocitem.cur{border-color:var(--lav-d)}
+.tocitem .n{flex:none;width:52px;height:52px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800}
+.tocitem .name{flex:1;min-width:0}
+.tocitem .meta{display:block;font-size:18px;color:var(--ink2);font-weight:700;margin-top:2px}
+.tocitem .go{display:flex;flex-direction:column;gap:6px;flex:none}
+.tocitem .go button{font-family:inherit;font-size:17px;font-weight:800;border:0;border-radius:16px;padding:3px 12px;cursor:pointer}
+.tocitem .go .c{background:var(--sky);color:var(--sky-d)}
+.tocitem .go .p{background:var(--lemon);color:var(--lemon-d)}
+.tocitem .go button:hover{transform:translateY(-2px)}
+
+/* ---------- chips inside a diagram ---------- */
+.chips{position:absolute;left:28px;top:20px;display:flex;gap:10px;align-items:center;z-index:2}
+.chips.right{left:auto;right:28px}
+.chips .lbl{font-size:21px;font-weight:800;background:var(--lemon);color:var(--lemon-d);border-radius:12px;padding:4px 12px}
+.chip{font:inherit;font-size:25px;font-weight:700;padding:5px 20px;border-radius:40px;border:3px solid var(--line);background:var(--paper);cursor:pointer;color:var(--ink2);transition:all .2s;box-shadow:0 3px 0 var(--line)}
+.chip.on{border-color:var(--sky-d);background:var(--sky);color:var(--sky-d);box-shadow:0 3px 0 var(--sky-d)}
+
+/* ---------- topic 2: frequency ---------- */
+.freqTop{display:flex;align-items:center;gap:30px;margin:10px 10px 0}
+.freqTop .rng{flex:1}
+.freqRow{display:flex;justify-content:space-between;font-size:27px;margin-top:6px;gap:6px}
+.freqRow span{flex:1;text-align:center;color:var(--ink2);cursor:pointer;padding:5px 0;border-radius:20px;font-weight:700;transition:all .2s}
+.freqRow span.on{color:var(--peach-d);background:var(--peach);font-weight:800}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;border-radius:12px;background:linear-gradient(90deg,var(--line),var(--peach));outline:none;margin:14px 0 4px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:52px;height:52px;border-radius:50%;background:var(--peach-d);border:7px solid #fff;box-shadow:0 0 0 4px var(--peach),0 6px 12px rgba(192,102,42,.3);cursor:grab}
+input[type=range]::-moz-range-thumb{width:40px;height:40px;border-radius:50%;background:var(--peach-d);border:7px solid #fff;box-shadow:0 0 0 4px var(--peach);cursor:grab}
+.bigpct{font-size:72px;font-weight:800;color:var(--peach-d);line-height:1;width:200px;text-align:right}
+.weekWrap{flex:1;display:flex;flex-direction:column;justify-content:center;gap:24px;padding:0 10px}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:18px}
+.day{border-radius:28px;background:var(--cream);height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-size:28px;font-weight:800;color:var(--ink3);transition:all .35s cubic-bezier(.3,1.4,.5,1);border:3px solid var(--line)}
+.day .mark{width:80px;height:80px;border-radius:50%;border:4px dashed var(--ink3);display:flex;align-items:center;justify-content:center;transition:all .35s cubic-bezier(.3,1.4,.5,1)}
+.day .mark svg{width:44px;height:44px;opacity:0;transition:opacity .2s}
+.day.on{background:var(--sky-l);border-color:var(--sky);color:var(--sky-d);transform:translateY(-6px);box-shadow:0 8px 0 var(--sky)}
+.day.on .mark{background:var(--sky-d);border:4px solid #fff;box-shadow:0 0 0 4px var(--sky)}
+.day.on .mark svg{opacity:1}
+.pctbar{height:30px;border-radius:16px;background:var(--cream);overflow:hidden;border:3px solid var(--line)}
+.pctbar div{height:100%;border-radius:16px;background:repeating-linear-gradient(-45deg,var(--peach) 0 14px,#ffcfae 14px 28px);transition:width .45s cubic-bezier(.3,1.3,.5,1)}
+
+/* ---------- topic 10: tense map ---------- */
+.tmap{flex:1;display:flex;gap:30px;align-items:stretch;min-height:0}
+.tgrid{width:900px;display:grid;grid-template-columns:110px repeat(3,1fr);grid-auto-rows:1fr;gap:12px;padding:6px 0}
+.tgrid .h{font-size:25px;font-weight:800;color:var(--ink2);display:flex;align-items:center;justify-content:center;border-radius:16px}
+.tgrid .h.col{background:var(--cream)}
+.tcell{border:3px solid var(--line);background:var(--cream);border-radius:22px;padding:10px;font-size:26px;font-weight:800;cursor:pointer;font-family:inherit;color:var(--ink);line-height:1.25;transition:all .2s}
+.tcell small{display:block;font-size:18px;color:var(--ink2);font-family:"Nunito",sans-serif;margin-top:4px}
+.tcell:hover{transform:translateY(-2px)}
+.tcell.on{background:var(--sky);border-color:var(--sky-d);color:var(--sky-d)}
+.tcell.on small{color:var(--sky-d)}
+.tcell.lock{opacity:.4;cursor:default;border-style:dashed}
+.tcell.lock:hover{transform:none}
+.tdetail{flex:1;display:flex;flex-direction:column;gap:10px;background:var(--cream);border-radius:28px;padding:20px 24px;min-width:0}
+.tdetail .nm{font-size:40px;font-weight:800;color:var(--sky-d)}
+.tdetail .fm{font-size:30px;font-weight:800;color:var(--ink)}
+.tdetail svg{flex:1;min-height:0;width:100%}
+
+/* ---------- topic 11: three steps ---------- */
+.steps{flex:1;display:grid;grid-template-columns:1fr 1.7fr 1fr;gap:26px;margin-top:66px;min-height:0}
+.stepc{background:var(--cream);border-radius:30px;padding:22px 26px;display:flex;flex-direction:column;gap:14px;border:3px solid var(--line);min-height:0}
+.stepc h4{margin:0;font-size:28px;font-weight:800;display:flex;align-items:center;gap:12px}
+.stepc h4 b{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px}
+.stepc:nth-child(1) h4 b{background:var(--pink);color:var(--pink-d)}
+.stepc:nth-child(2) h4 b{background:var(--mint);color:var(--mint-d)}
+.stepc:nth-child(3) h4 b{background:var(--sky);color:var(--sky-d)}
+.stepc .big{font-size:36px;font-weight:800;line-height:1.35}
+.stepc .small{font-size:24px;color:var(--ink2);font-weight:700}
+.stepc svg{flex:1;min-height:0;width:100%}
+</style>
+</head>
+<body>
+<div id="viewport"><div id="stage">
+  <header>
+    <button class="tag" id="bToc"><span class="dots"><i style="background:var(--pink)"></i><i style="background:var(--sky)"></i><i style="background:var(--mint)"></i></span>目錄<kbd>M</kbd></button>
+    <div class="title"><span class="kind" id="hKind"></span><span id="hTitle"></span></div>
+    <div class="ref" id="hRef"></div>
+  </header>
+  <div id="pausedBadge">❚❚ 已暫停</div>
+  <main id="main"></main>
+  <canvas id="ink" width="1920" height="1080"></canvas>
+  <div id="toc"><div class="tocbox">
+    <h2>目錄 <span style="font-size:22px;background:var(--lav);color:var(--lav-d);border-radius:30px;padding:4px 16px">時態系列 · 11 個主題</span></h2>
+    <div class="sub">每個主題分成「概念」和「練習」兩頁。數字鍵 1～9、0 可直接跳到主題。按 M 或 Esc 關閉。</div>
+    <div class="tocgrid" id="tocGrid"></div>
+  </div></div>
+  <footer>
+    <div class="tools" id="tools">
+      <button data-tool="pointer" data-tip="操作 (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M5 3l14 8-6 1.5L10 19z"/></svg></button>
+      <button data-tool="laser" data-tip="雷射筆 (L)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="4" fill="#e8476f" stroke="#e8476f"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></button>
+      <button data-tool="pen" data-tip="畫筆 (D)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1L19 8a2.1 2.1 0 0 0-3-3L5 16z"/><path d="M14 7l3 3"/></svg></button>
+      <span id="swatches" style="display:flex"></span>
+      <button data-tool="eraser" data-tip="橡皮擦 (E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 20h12"/><path d="M4.5 15.5l9-9a2 2 0 0 1 2.8 0l2.2 2.2a2 2 0 0 1 0 2.8L11 19H8z"/><path d="M9 11l5 5"/></svg></button>
+      <span class="sep"></span>
+      <button id="bTrash" data-tip="清除本頁筆跡 (C)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>
+    </div>
+    <div class="bar">
+      <button id="bPrev" data-tip="上一頁 (←)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <span class="sep"></span>
+      <button id="bPlay" data-tip="自動示範 (P)"></button>
+      <button id="bReset" data-tip="重設本頁 (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/></svg>重設</button>
+      <button id="bZoom" data-tip="只看圖解 (F)"></button>
+      <span class="sep"></span>
+      <button id="bNext" data-tip="下一頁 (→)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
+    </div>
+    <div class="pagedots" id="pageDots"></div>
+  </footer>
+</div></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const NS = 'http://www.w3.org/2000/svg';
+const C = {
+  pink:'#f8cdd8', pinkD:'#c4587c', pinkL:'#fdeef2',
+  sky:'#c4e2f8', skyD:'#3a78b0', skyL:'#ebf5fd',
+  peach:'#ffd8bd', peachD:'#c0662a', peachL:'#fff1e6',
+  mint:'#c3ecd9', mintD:'#2f8a66', mintL:'#ebf8f1',
+  lav:'#dcd2f7', lavD:'#6d58b8', lavL:'#f3effd',
+  line:'#efe4ea', ink:'#4a3f4f', ink2:'#857a8a', ink3:'#c2b8c4',
+};
+const ICON = {
+  play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>',
+  pause:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16" rx="2"/><rect x="14" y="4" width="5" height="16" rx="2"/></svg>',
+  zoom:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  bulb:'<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>',
+};
+const rnd = n => Math.floor(Math.random() * n);
+const pick = a => a[rnd(a.length)];
+function el(tag, attrs = {}, parent, text) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text != null) e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function clear(g) { while (g.firstChild) g.firstChild.remove(); }
+function svgPoint(svg, evt) {
+  const p = svg.createSVGPoint(); p.x = evt.clientX; p.y = evt.clientY;
+  return p.matrixTransform(svg.getScreenCTM().inverse());
+}
+function dragOn(target, svg, onMove) {
+  target.addEventListener('pointerdown', e => {
+    e.preventDefault(); target.setPointerCapture(e.pointerId);
+    const start = svgPoint(svg, e);
+    App.pauseForUser();
+    const move = ev => onMove(svgPoint(svg, ev), start);
+    const up = () => { target.removeEventListener('pointermove', move); target.removeEventListener('pointerup', up); };
+    target.addEventListener('pointermove', move);
+    target.addEventListener('pointerup', up);
+  });
+}
+function makeChips(host, label, items, onPick, cls = '') {
+  host.className = 'chips ' + cls;
+  host.innerHTML = label ? `<span class="lbl">${label}</span>` : '';
+  items.forEach((it, i) => {
+    const b = document.createElement('button');
+    b.className = 'chip en'; b.textContent = it;
+    b.onclick = () => { App.pauseForUser(); onPick(i); };
+    host.appendChild(b);
+  });
+  return i => [...host.querySelectorAll('.chip')].forEach((c, j) => c.classList.toggle('on', i === j));
+}
+function chipsIn(diagram, label, items, onPick, cls) {
+  const h = document.createElement('div'); diagram.appendChild(h);
+  return makeChips(h, label, items, onPick, cls);
+}
+/* text width estimate for pills (CJK ≈ full em, latin ≈ half em) */
+const textW = (t, fs) => [...t].reduce((w, ch) => w + (ch.charCodeAt(0) > 255 ? fs : fs * .56), 0);
+const blank = (ph, ans = []) => `<input class="blank" size="${Math.max(ph.length, ...ans.map(a => a.length)) + 1}" placeholder="${ph}" autocomplete="off" spellcheck="false">`;
+const V = s => `<span class="v">${s}</span>`;
+const T = s => `<span class="t">${s}</span>`;
+
+/* ================= Timeline base + shapes (shared by most topics) ================= */
+function TL(svg, o = {}) {
+  const X0 = 120, X1 = 1460, NOW = 790, Y = 300;
+  const t = { X0, X1, NOW, Y, svg };
+  el('rect', {x:X0-40, y:70, width:NOW-X0+30, height:360, rx:40, fill:C.pinkL}, svg);
+  el('rect', {x:NOW+10, y:70, width:X1-NOW+50, height:360, rx:40, fill:C.mintL}, svg);
+  t.pastLbl = el('text', {x:(X0+NOW)/2-20, y:125, 'text-anchor':'middle', 'font-size':36, fill:C.pinkD}, svg, '過去');
+  t.futLbl = el('text', {x:(NOW+X1)/2+30, y:125, 'text-anchor':'middle', 'font-size':36, fill:C.mintD}, svg, '未來');
+  el('line', {x1:X0, y1:Y, x2:X1+20, y2:Y, stroke:C.ink3, 'stroke-width':12, 'stroke-linecap':'round'}, svg);
+  el('path', {d:`M${X1+18} ${Y-20} L${X1+48} ${Y} L${X1+18} ${Y+20} Z`, fill:C.ink3, 'stroke-linejoin':'round', stroke:C.ink3, 'stroke-width':6}, svg);
+  (o.ticks || []).forEach(([tx, a, b]) => {
+    el('circle', {cx:tx, cy:Y, r:12, fill:'#fff', stroke:C.peachD, 'stroke-width':5}, svg);
+    el('text', {x:tx, y:Y+100, 'text-anchor':'middle', 'font-size':28, fill:C.peachD}, svg, a);
+    if (b) el('text', {x:tx, y:Y+134, 'text-anchor':'middle', 'font-size':28, fill:C.peachD}, svg, b);
+  });
+  el('line', {x1:NOW, y1:150, x2:NOW, y2:440, stroke:C.lavD, 'stroke-width':5, 'stroke-dasharray':'2 14', 'stroke-linecap':'round'}, svg);
+  el('rect', {x:NOW-66, y:448, width:132, height:54, rx:27, fill:C.lavD}, svg);
+  el('text', {x:NOW, y:486, 'text-anchor':'middle', 'font-size':34, 'font-weight':800, fill:'#fff'}, svg, 'Now');
+  t.layer = el('g', {}, svg);
+  t.focus = z => { t.pastLbl.setAttribute('opacity', z === 0 ? 1 : .45); t.futLbl.setAttribute('opacity', z === 2 ? 1 : .45); };
+  return t;
+}
+const S_ = {
+  text(L, x, y, s, fill = C.skyD, fs = 32) { return el('text', {x, y, 'text-anchor':'middle', 'font-size':fs, 'font-weight':800, fill}, L, s); },
+  pill(L, x, y, s, bg = C.sky, fg = C.skyD, fs = 30) {
+    const w = textW(s, fs) + 48;
+    el('rect', {x:x - w/2, y:y - fs*1.05, width:w, height:fs*1.75, rx:fs*.875, fill:bg}, L);
+    return S_.text(L, x, y, s, fg, fs);
+  },
+  dot(L, x, y, r = 30, fill = C.sky, core = C.skyD) {
+    el('circle', {cx:x, cy:y, r, fill, stroke:'#fff', 'stroke-width':6}, L);
+    el('circle', {cx:x, cy:y, r:r*.38, fill:core}, L);
+  },
+  bar(L, x1, x2, y, label) {
+    el('rect', {x:x1, y:y-50, width:x2-x1, height:100, rx:50, fill:C.sky, stroke:'#fff', 'stroke-width':6}, L);
+    if (label) S_.text(L, (x1+x2)/2, y+11, label, C.skyD, 30);
+  },
+  arrow(L, x1, x2, y, label) {
+    el('rect', {x:x1, y:y-32, width:x2-x1-26, height:64, rx:32, fill:C.sky, stroke:'#fff', 'stroke-width':6}, L);
+    el('path', {d:`M${x2-46} ${y-52} L${x2+6} ${y} L${x2-46} ${y+52} Z`, fill:C.skyD, stroke:'#fff', 'stroke-width':5, 'stroke-linejoin':'round'}, L);
+    if (label) S_.text(L, (x1+x2)/2, y-62, label, C.skyD, 30);
+  },
+  bolt(L, x, y, label) {
+    el('path', {d:`M${x+12} ${y-120} L${x-22} ${y-6} L${x+4} ${y-6} L${x-14} ${y+86} L${x+34} ${y-34} L${x+8} ${y-34} L${x+28} ${y-120} Z`, fill:C.peach, stroke:C.peachD, 'stroke-width':5, 'stroke-linejoin':'round'}, L);
+    if (label) S_.pill(L, x, y+128, label, C.peachL, C.peachD, 28);
+  },
+};
+/* tense shapes used by topics 1, 3, 10, 11 */
+const CELLS = {
+  'past-simple':   {n:'過去簡單式', f:'S + V-ed（過去式）', row:0, col:0},
+  'present-simple':{n:'現在簡單式', f:'S + V / V-s', row:1, col:0},
+  'future-simple': {n:'未來簡單式', f:'S + will + V', row:2, col:0},
+  'past-cont':     {n:'過去進行式', f:'S + was / were + V-ing', row:0, col:1},
+  'present-cont':  {n:'現在進行式', f:'S + am / is / are + V-ing', row:1, col:1},
+  'future-cont':   {n:'未來進行式', f:'S + will be + V-ing', row:2, col:1},
+  'present-perf':  {n:'現在完成式', f:'S + have / has + p.p.', row:1, col:2},
+};
+function drawCell(t, key, label) {
+  const L = t.layer, Y = t.Y, NOW = t.NOW;
+  clear(L);
+  if (key === 'past-simple')    { S_.dot(L, 430, Y, 34); if (label) S_.text(L, 430, Y-62, label); }
+  if (key === 'future-simple')  { S_.dot(L, 1150, Y, 34); if (label) S_.text(L, 1150, Y-62, label); }
+  if (key === 'present-simple') { for (let x = 200; x <= 1400; x += 150) S_.dot(L, x, Y, 22); if (label) S_.text(L, NOW, Y-62, label); }
+  if (key === 'past-cont')      S_.bar(L, 250, 650, Y, label);
+  if (key === 'present-cont')   S_.bar(L, NOW-200, NOW+200, Y, label);
+  if (key === 'future-cont')    S_.bar(L, 930, 1330, Y, label);
+  if (key === 'present-perf')   S_.arrow(L, 300, NOW, Y, label);
+  t.focus(CELLS[key].row);
+}
+
+/* ================= Shared data ================= */
+const FREQ = [
+  {w:'never', pct:0, days:[]},
+  {w:'seldom', pct:10, days:[3]},
+  {w:'sometimes', pct:40, days:[1,4,6]},
+  {w:'often', pct:60, days:[0,2,4,6]},
+  {w:'usually', pct:85, days:[0,1,2,3,4,5]},
+  {w:'always', pct:100, days:[0,1,2,3,4,5,6]},
+];
+const ZONE = ['過去', '現在', '未來'];
+
+/* ================= Slide definitions ================= */
+const DEFS = [
+  [1, '時間軸怎麼看', 'L1 課本 p.6', '看圖寫句子：過去、現在、未來', 'L1 課本 p.6'],
+  [2, '頻率副詞：一週做幾天？', 'L1 課本 p.6', '看圖寫句子：頻率與動詞', 'L1 課本 p.6、p.39'],
+  [3, '過去式與未來式', 'L1 課本 p.6、p.38', '看圖寫句子：動詞變化', 'L1 課本 p.6、p.38'],
+  [4, '點和線：簡單式 vs 進行式', 'L1 p.6、L3 p.18', '看圖寫句子：點還是線？', 'L1 p.6、L3 p.18'],
+  [5, '進行式的三種時間', 'L3 課本 p.18', '看圖寫句子：哪一種進行式？', 'L3 課本 p.18'],
+  [6, '過去進行式被打斷：when', 'L3 課本 p.18', '看圖寫句子：長動作與短動作', 'L3 課本 p.18'],
+  [7, '現在完成式：三種用法', 'L4 課本 p.25', '看圖寫句子：have / has + p.p.', 'L4 課本 p.25、p.38'],
+  [8, '現在完成式：since 與 for', 'L4 課本 p.25', '看圖寫句子：since 還是 for？', 'L4 課本 p.25'],
+  [9, 'been to 與 gone to', 'L4 課本 p.25', '看圖寫句子：been 還是 gone？', 'L4 課本 p.25'],
+  [10, '總整理：時態地圖', '全系列', '看圖寫句子：七種時態大混合', '全系列'],
+  [11, '解題三步驟', '課本 p.7、p.19、p.25', '課本隨堂練習 12 題', '課本 p.7、p.19、p.25'],
+];
+const TOPIC_NAMES = ['時間軸怎麼看','現在簡單式：頻率副詞','過去式與未來式','點和線：簡單式 vs 進行式','進行式的三種時間','過去進行式被打斷 when','現在完成式：三種用法','現在完成式：since 與 for','been to 與 gone to','總整理：時態地圖','隨堂挑戰'];
+(() => {
+  const main = $('#main');
+  DEFS.forEach(([tp, ct, cr, pt, pr]) => {
+    [['concept', ct, cr, 1], ['practice', pt, pr, 2]].forEach(([kind, title, ref, k]) => {
+      const s = document.createElement('section');
+      s.className = 'slide';
+      Object.assign(s.dataset, { topic: tp, kind, title, ref, k });
+      s.innerHTML = `<div class="diagram" id="d${tp}_${k}"></div><div class="below"><div class="sentence en" id="s${tp}_${k}"></div></div>`;
+      main.appendChild(s);
+    });
+  });
+})();
+const D = (tp, k) => $(`#d${tp}_${k}`);
+const SEN = (tp, k) => $(`#s${tp}_${k}`);
+function svgIn(host, vb = '0 0 1600 560') { const s = el('svg', {viewBox: vb}); host.appendChild(s); return s; }
+
+/* Controllers
+   concept:  { render, explain, reset, play?, stop? }
+   practice: { render, explain, reset, answers, randomize, askLabel? } — sentence holds <input class="blank"> */
+const CTRL = {};
+
+/* ---------- Topic 1：時間軸 ---------- */
+CTRL['1_1'] = (() => {
+  const host = D(1,1), svg = svgIn(host), t = TL(svg);
+  const EV = [
+    {x:430, lab:'paid the bill', s:`Ethan ${V('paid')} his phone bill ${T('yesterday')}.`, f:'過去式'},
+    {x:790, lab:'wallet is empty', s:`Ethan's wallet ${V('is')} empty ${T('now')}.`, f:'現在式'},
+    {x:1150, lab:'pay for lunch', s:`Kevin ${V('will pay')} for Ethan's lunch ${T('tomorrow')}.`, f:'will + 原形'},
+  ];
+  const cols = [[C.pink, C.pinkD], [C.lav, C.lavD], [C.mint, C.mintD]];
+  let sel = 0, timer = null;
+  function render() {
+    clear(t.layer);
+    EV.forEach((e, i) => {
+      const g = el('g', {class:'click'}, t.layer);
+      const on = i === sel;
+      el('circle', {cx:e.x, cy:t.Y, r:on ? 46 : 30, fill:on ? cols[i][0] : '#fff', stroke:cols[i][1], 'stroke-width':6}, g);
+      el('circle', {cx:e.x, cy:t.Y, r:on ? 16 : 10, fill:cols[i][1]}, g);
+      S_.text(g, e.x, t.Y - (on ? 74 : 56), e.lab, cols[i][1], on ? 32 : 26);
+      g.onclick = () => { App.pauseForUser(); sel = i; render(); };
+    });
+    t.focus(sel);
+    SEN(1,1).innerHTML = `${EV[sel].s}<span class="sub">${ZONE[sel]} → 動詞用${EV[sel].f}　（點一下時間軸上的圓點）</span>`;
+  }
+  return {
+    render,
+    explain: () => `<table><tr class="${sel===0?'hl':''}"><td>過去</td><td class="en">yesterday, last week, ago</td><td>過去式 <span class="en">paid</span></td></tr>
+      <tr class="${sel===1?'hl':''}"><td>現在</td><td class="en">now, every day, usually</td><td>現在式 <span class="en">is / pays</span></td></tr>
+      <tr class="${sel===2?'hl':''}"><td>未來</td><td class="en">tomorrow, next week, later</td><td><span class="en">will pay</span></td></tr></table>
+      <div class="note">先看事情發生在時間軸的哪裡，再決定動詞的樣子。</div>`,
+    reset() { sel = 0; render(); },
+    play() { timer = setInterval(() => { sel = (sel + 1) % 3; render(); }, 1600); },
+    stop() { clearInterval(timer); },
+  };
+})();
+
+CTRL['1_2'] = (() => {
+  const host = D(1,2), svg = svgIn(host), t = TL(svg);
+  const ITEMS = [
+    {s:'Ethan', b:'be', f:['was','is','will be'], rest:'hungry'},
+    {s:'My dog', b:'be', f:['was','is','will be'], rest:'sick'},
+    {s:'The weather', b:'be', f:['was','is','will be'], rest:'hot and sunny'},
+    {s:'We', b:'be', f:['were','are','will be'], rest:'very busy'},
+    {s:'Ethan', b:'have', f:['had','has','will have'], rest:'no money'},
+    {s:'I', b:'have', f:['had','have','will have'], rest:'a cold'},
+  ];
+  const XS = [430, 790, 1150];
+  let i = 0, z = 0;
+  function render() {
+    const it = ITEMS[i];
+    clear(t.layer);
+    S_.dot(t.layer, XS[z], t.Y, 44, C.peach, C.peachD);
+    S_.pill(t.layer, XS[z], t.Y - 90, '這件事', C.peachL, C.peachD, 28);
+    t.focus(z);
+    SEN(1,2).innerHTML = `${it.s} ${blank(it.b, it.f)} ${it.rest}.`;
+  }
+  return {
+    render,
+    answers: () => [[ITEMS[i].f[z]]],
+    explain() {
+      const it = ITEMS[i];
+      return `<ol><li><span>橘點${['在 Now 的左邊','就在 Now 上','在 Now 的右邊'][z]} <span class="arrow">→</span> <b>${ZONE[z]}</b></span></li>
+        <li><span>主詞 <b class="en">${it.s}</b>，<span class="en">${it.b}</span> 的${ZONE[z]}形是 <b class="en">${it.f[z]}</b></span></li>
+        <li><span class="en"><b>${it.s} ${it.f[z]}</b> ${it.rest}.</span></li></ol>`;
+    },
+    randomize() { const o = [i, z]; do { i = rnd(ITEMS.length); z = rnd(3); } while (i === o[0] && z === o[1]); render(); },
+    reset() { i = 0; z = 0; render(); },
+  };
+})();
+
+/* ---------- Topic 2：頻率副詞（週曆） ---------- */
+function WeekDiagram(host, practice) {
+  host.innerHTML = (practice
+    ? `<div class="dhint">這是主角這一週的紀錄：亮起的日子 = 有做這件事</div>`
+    : `<div class="dhint">拖動滑桿：一週做幾天？</div>
+       <div class="freqTop"><div class="rng"><input type="range" min="0" max="5" step="1"><div class="freqRow en"></div></div><span class="bigpct"></span></div>`)
+    + `<div class="weekWrap"><div class="week en"></div>${practice ? '' : '<div class="pctbar"><div></div></div>'}</div>`;
+  const week = host.querySelector('.week');
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d => {
+    const c = document.createElement('div'); c.className = 'day'; c.innerHTML = `<div class="mark">${ICON.check}</div>${d}`; week.appendChild(c);
+  });
+  let onPick = () => {};
+  const range = host.querySelector('input[type=range]'), labels = host.querySelector('.freqRow');
+  if (range) {
+    FREQ.forEach((x, i) => { const sp = document.createElement('span'); sp.textContent = x.w; sp.onclick = () => { App.pauseForUser(); onPick(i); }; labels.appendChild(sp); });
+    range.oninput = () => { App.pauseForUser(); onPick(+range.value); };
+  }
+  return {
+    onPick(fn) { onPick = fn; },
+    show(f) {
+      const F = FREQ[f];
+      [...week.children].forEach((c, i) => c.classList.toggle('on', F.days.includes(i)));
+      if (range) {
+        range.value = f;
+        [...labels.children].forEach((c, i) => c.classList.toggle('on', i === f));
+        host.querySelector('.pctbar div').style.width = F.pct + '%';
+        host.querySelector('.bigpct').textContent = (F.pct === 85 ? '≈' : '') + F.pct + '%';
+      }
+    },
+  };
+}
+CTRL['2_1'] = (() => {
+  const d = WeekDiagram(D(2,1), false);
+  let f = 5, timer = null;
+  d.onPick(i => { f = i; render(); });
+  function render() { d.show(f); SEN(2,1).innerHTML = `Ethan ${T(FREQ[f].w)} ${V('has')} an egg for breakfast.`; }
+  return {
+    render,
+    explain: () => `<table class="en">${FREQ.slice().reverse().map((x, i) => `<tr class="${x.w === FREQ[f].w ? 'hl' : ''}"><td>${x.w}</td><td>${['100%','≈ 85%','≈ 60%','≈ 40%','≈ 10%','0%'][i]}</td><td style="font-family:'Microsoft JhengHei'">${['總是','通常','常常','有時','很少','從不'][i]}</td></tr>`).join('')}</table>
+      <div class="note">位置：放在<b>一般動詞前</b>、<b>be 動詞後</b>　<span class="en">Ethan <u>always</u> has… ／ Ethan is <u>always</u> late.</span></div>`,
+    reset() { f = 5; render(); },
+    play() { timer = setInterval(() => { f = (f + 5) % 6; render(); }, 1400); },
+    stop() { clearInterval(timer); },
+  };
+})();
+CTRL['2_2'] = (() => {
+  const d = WeekDiagram(D(2,2), true);
+  const SUBJ = [{t:'I', third:false},{t:'Ethan', third:true},{t:'She', third:true},{t:'My sisters', third:false}];
+  const VERB = [
+    {b:'have', s:'has', obj:'an egg for breakfast', rule:'have 是例外 → has'},
+    {b:'watch', s:'watches', obj:'TV after dinner', rule:'字尾 ch → 加 es'},
+    {b:'study', s:'studies', obj:'English at night', rule:'子音 + y → 去 y 加 ies'},
+    {b:'play', s:'plays', obj:'basketball after school', rule:'母音 + y → 直接加 s'},
+    {b:'walk', s:'walks', obj:'to school', rule:'大多數動詞 → 直接加 s'},
+  ];
+  let s = 1, v = 1, f = 2;
+  const ans = () => [[FREQ[f].w], [SUBJ[s].third ? VERB[v].s : VERB[v].b]];
+  function render() { d.show(f); SEN(2,2).innerHTML = `${SUBJ[s].t} ${blank('頻率', ['sometimes'])} ${blank(VERB[v].b, ans()[1])} ${VERB[v].obj}.`; }
+  return {
+    render, answers: ans,
+    explain() {
+      const S = SUBJ[s], Vb = VERB[v], F = FREQ[f];
+      return `<ol><li><span>一週亮了 <b>${F.days.length} 天</b> <span class="arrow">→</span> 約 ${F.pct}% <span class="arrow">→</span> <b class="en">${F.w}</b></span></li>
+        <li><span>主詞 <b class="en">${S.t}</b> ${S.third ? `是第三人稱單數，動詞要變化：<span class="en">${Vb.b} → <b>${Vb.s}</b></span>（${Vb.rule}）` : `不是第三人稱單數，動詞用原形 <b class="en">${Vb.b}</b>`}</span></li>
+        <li><span>頻率副詞放在一般動詞前：<span class="en"><b>${S.t} ${F.w} ${ans()[1][0]}</b> ${Vb.obj}.</span></span></li></ol>`;
+    },
+    randomize() { const o = [s, v, f]; do { s = rnd(4); v = rnd(5); f = rnd(6); } while (s === o[0] && v === o[1] && f === o[2]); render(); },
+    reset() { s = 1; v = 1; f = 2; render(); },
+  };
+})();
+
+/* ---------- Topic 3：過去式與未來式（拖時間詞） ---------- */
+const IRR = [
+  {b:'pay', p:'paid', s:'pays', obj:'his phone bill'},
+  {b:'buy', p:'bought', s:'buys', obj:'a new bike'},
+  {b:'eat', p:'ate', s:'eats', obj:'a hamburger'},
+  {b:'go', p:'went', s:'goes', obj:'to the gym'},
+  {b:'see', p:'saw', s:'sees', obj:'a movie'},
+  {b:'take', p:'took', s:'takes', obj:'the bus'},
+  {b:'write', p:'wrote', s:'writes', obj:'a letter'},
+  {b:'swim', p:'swam', s:'swims', obj:'in the sea'},
+  {b:'teach', p:'taught', s:'teaches', obj:'English'},
+];
+function timeWordAt(x, NOW) {
+  if (x < 330) return ['last week', 0];
+  if (x < NOW - 110) return ['yesterday', 0];
+  if (x <= NOW + 110) return ['every day', 1];
+  if (x < 1250) return ['tomorrow', 2];
+  return ['next week', 2];
+}
+CTRL['3_1'] = (() => {
+  const host = D(3,1), svg = svgIn(host), t = TL(svg);
+  const VERBS = IRR.slice(0, 4);
+  let v = 0, fut = 0, x = 520, dir = 1, raf = null;
+  const markV = chipsIn(host, '動詞', VERBS.map(a => a.b), i => { v = i; render(); });
+  const markF = chipsIn(host, '未來用', ['will', 'be going to'], i => { fut = i; render(); }, 'right');
+  const g = el('g', {class:'drag'}, svg);
+  el('rect', {x:-80, y:t.Y-60, width:160, height:220, fill:'transparent'}, g);
+  const knob = el('circle', {cy:t.Y, r:34, fill:C.peach, stroke:'#fff', 'stroke-width':7}, g);
+  const knobDot = el('circle', {cy:t.Y, r:12, fill:C.peachD}, g);
+  const pillG = el('g', {}, g);
+  dragOn(g, svg, p => { x = Math.max(t.X0, Math.min(t.X1, p.x)); render(); });
+  function form(z) { const a = VERBS[v]; return z === 0 ? a.p : z === 1 ? a.s : (fut ? `is going to ${a.b}` : `will ${a.b}`); }
+  function render() {
+    const [w, z] = timeWordAt(x, t.NOW);
+    knob.setAttribute('cx', x); knobDot.setAttribute('cx', x);
+    clear(pillG); S_.pill(pillG, x, t.Y + 110, w, C.peachL, C.peachD, 32);
+    t.focus(z); markV(v); markF(fut);
+    const a = VERBS[v];
+    SEN(3,1).innerHTML = `Ethan ${V(form(z))} ${a.obj} ${T(w)}.<span class="sub">拖動橘色時間詞：${ZONE[z]} → ${z === 0 ? `${a.b} → ${a.p}` : z === 1 ? `${a.b} → ${a.s}（第三人稱單數）` : (fut ? 'be going to + 原形' : 'will + 原形')}</span>`;
+  }
+  return {
+    render,
+    explain() {
+      const [, z] = timeWordAt(x, t.NOW);
+      return `<table><tr class="${z===0?'hl':''}"><td>過去簡單式</td><td class="en">S + V-ed</td><td class="en">paid, bought, ate, went（不規則見 p.38）</td></tr>
+        <tr class="${z===1?'hl':''}"><td>現在簡單式</td><td class="en">S + V / V-s</td><td class="en">pays, buys, eats, goes</td></tr>
+        <tr class="${z===2?'hl':''}"><td>未來簡單式</td><td class="en">will + V<br>be going to + V</td><td>will：臨時決定、預測<br>be going to：已經計畫好</td></tr></table>`;
+    },
+    reset() { v = 0; fut = 0; x = 520; render(); },
+    play() {
+      let last = performance.now();
+      const tick = tt => { x += dir * (tt - last) * 0.22; last = tt; if (x > t.X1) { x = t.X1; dir = -1; } if (x < t.X0) { x = t.X0; dir = 1; } render(); raf = requestAnimationFrame(tick); };
+      raf = requestAnimationFrame(tick);
+    },
+    stop() { cancelAnimationFrame(raf); },
+  };
+})();
+CTRL['3_2'] = (() => {
+  const host = D(3,2), svg = svgIn(host), t = TL(svg);
+  const SUBJ = [{t:'Ethan', third:true, be:'is'}, {t:'I', third:false, be:'am'}, {t:'They', third:false, be:'are'}];
+  const TW = [[['yesterday',600],['last week',300],['two days ago',450]], [['every day',790],['every Sunday',790]], [['tomorrow',1000],['next week',1300]]];
+  let v = 1, s = 0, z = 0, w = 0;
+  function ans() { const a = IRR[v], S = SUBJ[s]; return z === 0 ? [a.p] : z === 1 ? [S.third ? a.s : a.b] : [`will ${a.b}`, `${S.be} going to ${a.b}`]; }
+  function render() {
+    const [word, x] = TW[z][w];
+    clear(t.layer);
+    S_.dot(t.layer, x, t.Y, 34, C.peach, C.peachD);
+    S_.pill(t.layer, x, t.Y + 110, word, C.peachL, C.peachD, 34);
+    t.focus(z);
+    SEN(3,2).innerHTML = `${SUBJ[s].t} ${blank(IRR[v].b, ans())} ${IRR[v].obj}.`;
+  }
+  return {
+    render, answers: () => [ans()],
+    explain() {
+      const a = IRR[v], S = SUBJ[s], word = TW[z][w][0];
+      const why = z === 0 ? `過去式：<span class="en">${a.b} → <b>${a.p}</b></span>（不規則變化，見 p.38）`
+        : z === 1 ? (S.third ? `主詞 <span class="en">${S.t}</span> 是第三人稱單數：<span class="en">${a.b} → <b>${a.s}</b></span>` : `主詞 <span class="en">${S.t}</span> 不是第三人稱單數：用原形 <b class="en">${a.b}</b>`)
+        : `未來：<b class="en">will ${a.b}</b> 或 <b class="en">${S.be} going to ${a.b}</b>`;
+      return `<ol><li><span>時間詞 <b class="en">${word}</b> 在 Now 的${['左邊','上面','右邊'][z]} <span class="arrow">→</span> <b>${ZONE[z]}</b></span></li>
+        <li><span>${why}</span></li>
+        <li><span class="en"><b>${S.t} ${ans()[0]}</b> ${a.obj} ${word}.</span></li></ol>`;
+    },
+    randomize() { const o = [v, s, z]; do { v = rnd(IRR.length); s = rnd(3); z = rnd(3); } while (v === o[0] && s === o[1] && z === o[2]); w = rnd(TW[z].length); render(); },
+    reset() { v = 1; s = 0; z = 0; w = 0; render(); },
+  };
+})();
+
+/* ---------- Topic 4：點和線 ---------- */
+function dotsOrLine(t, mode, label, hint = true) {
+  const L = t.layer; clear(L);
+  if (mode === 0) { for (let x = 190; x <= 1420; x += 136) S_.dot(L, x, t.Y, 24); if (hint) S_.pill(L, 470, 190, '點點點：常常做（習慣）', C.sky, C.skyD, 28); }
+  else { S_.bar(L, t.NOW - 230, t.NOW + 230, t.Y, label); if (hint) S_.pill(L, 470, 190, '一條線：現在正在做', C.sky, C.skyD, 28); }
+  if (mode === 0 && label) S_.text(L, 1130, t.Y - 56, label);
+}
+CTRL['4_1'] = (() => {
+  const host = D(4,1), svg = svgIn(host), t = TL(svg);
+  const W = [['every Sunday',0],['now',1],['always',0],['at the moment',1],['on weekends',0],['right now',1]];
+  let w = 0, timer = null;
+  const mark = chipsIn(host, '時間詞', W.map(a => a[0]), i => { w = i; render(); });
+  function render() {
+    const [word, m] = W[w];
+    dotsOrLine(t, m, m ? 'baking a cake' : 'bake cakes'); t.focus(1); mark(w);
+    const s = m ? `Lucy ${V('is baking')} a cake ${T(word)}.`
+      : word === 'always' ? `Lucy ${T('always')} ${V('bakes')} cakes.` : `Lucy ${V('bakes')} cakes ${T(word)}.`;
+    SEN(4,1).innerHTML = `${s}<span class="sub">${m ? '一條線蓋住 Now → 現在進行式' : '一個個點 → 現在簡單式'}</span>`;
+  }
+  return {
+    render,
+    explain: () => `<table><tr class="${W[w][1]===0?'hl':''}"><td>點點點</td><td>習慣、常態</td><td>現在簡單式 <span class="en">S + V(s)</span></td><td class="en">every…, always, usually, on weekends</td></tr>
+      <tr class="${W[w][1]===1?'hl':''}"><td>一條線</td><td>說話當下正在做</td><td>現在進行式 <span class="en">S + am/is/are + V-ing</span></td><td class="en">now, right now, at the moment</td></tr></table>`,
+    reset() { w = 0; render(); },
+    play() { timer = setInterval(() => { w = (w + 1) % W.length; render(); }, 1600); },
+    stop() { clearInterval(timer); },
+  };
+})();
+CTRL['4_2'] = (() => {
+  const host = D(4,2), svg = svgIn(host), t = TL(svg);
+  const VB = [
+    {b:'read', s:'reads', ing:'reading', o1:'comic books', o2:'a comic book'},
+    {b:'play', s:'plays', ing:'playing', o1:'the piano', o2:'the piano'},
+    {b:'cook', s:'cooks', ing:'cooking', o1:'dinner', o2:'dinner'},
+    {b:'swim', s:'swims', ing:'swimming', o1:'in the pool', o2:'in the pool'},
+    {b:'watch', s:'watches', ing:'watching', o1:'TV', o2:'TV'},
+  ];
+  const SUBJ = [{t:'Lucy', third:true, be:'is'}, {t:'I', third:false, be:'am'}, {t:'My brothers', third:false, be:'are'}];
+  let v = 0, s = 0, m = 1;
+  const ans = () => m ? [`${SUBJ[s].be} ${VB[v].ing}`] : [SUBJ[s].third ? VB[v].s : VB[v].b];
+  function render() {
+    dotsOrLine(t, m, '', false); t.focus(1);
+    SEN(4,2).innerHTML = `${SUBJ[s].t} ${blank(VB[v].b, ans())} ${m ? VB[v].o2 : VB[v].o1}.`;
+  }
+  return {
+    render, answers: () => [ans()],
+    explain() {
+      const S = SUBJ[s], a = VB[v];
+      return `<ol><li><span>圖是${m ? '<b>一條線</b>蓋住 Now <span class="arrow">→</span> 現在正在做 <span class="arrow">→</span> <b>現在進行式</b>' : '<b>一個個點</b> <span class="arrow">→</span> 習慣 <span class="arrow">→</span> <b>現在簡單式</b>'}</span></li>
+        <li><span>${m ? `主詞 <span class="en">${S.t}</span> 配 <b class="en">${S.be}</b>，<span class="en">${a.b} → <b>${a.ing}</b></span>` : (S.third ? `主詞 <span class="en">${S.t}</span> 是第三人稱單數：<span class="en">${a.b} → <b>${a.s}</b></span>` : `主詞 <span class="en">${S.t}</span> 用原形 <b class="en">${a.b}</b>`)}</span></li>
+        <li><span class="en"><b>${S.t} ${ans()[0]}</b> ${m ? a.o2 : a.o1}.</span></li></ol>`;
+    },
+    randomize() { const o = [v, s, m]; do { v = rnd(VB.length); s = rnd(3); m = rnd(2); } while (v === o[0] && s === o[1] && m === o[2]); render(); },
+    reset() { v = 0; s = 0; m = 1; render(); },
+  };
+})();
+
+/* ---------- Topic 5：進行式三種時間 ---------- */
+const SUBJ5 = [
+  {t:'I', be:['was','am','will be'], why:'I'},
+  {t:'Lucy', be:['was','is','will be'], why:'單數'},
+  {t:'Lucy and Teddy', be:['were','are','will be'], why:'複數'},
+];
+const TENSE5 = ['過去進行式','現在進行式','未來進行式'];
+function BarDiagram(svg, practice) {
+  const t = TL(svg, {ticks:[[250,'5 p.m.','yesterday'],[560,'an hour','ago'],[1010,'6 p.m.','tonight'],[1330,'this time','tomorrow']]});
+  const { X0, X1, NOW, Y } = t, W = 300;
+  const status = el('g', {}, svg);
+  const g = el('g', {class: practice ? '' : 'drag'}, svg);
+  const bar = el('rect', {y:Y-58, width:W, height:116, rx:58, fill:C.sky, stroke:'#fff', 'stroke-width':6}, g);
+  const barTxt = el('text', {y:Y+12, 'text-anchor':'middle', 'font-size':34, 'font-weight':800, fill:C.skyD}, g, 'baking a cake');
+  let x = NOW - W/2, onMove = () => {};
+  if (!practice) dragOn(g, svg, (p, start) => {
+    if (start.ox == null) start.ox = x - start.x;
+    x = Math.max(X0, Math.min(X1 - W, p.x + start.ox)); onMove();
+  });
+  const api = {
+    get x() { return x; }, set x(v) { x = v; },
+    X0, X1, NOW, W,
+    onMove(fn) { onMove = fn; },
+    zone() { if (x <= NOW && x + W >= NOW) return 1; return x + W < NOW ? 0 : 2; },
+    phrase() {
+      const z = api.zone(), c = x + W / 2;
+      if (z === 1) return 'now';
+      if (z === 0) return c < 420 ? 'at 5 p.m. yesterday' : 'an hour ago';
+      return c > 1180 ? 'at this time tomorrow' : 'at 6 tonight';
+    },
+    randomZone(z) {
+      const r = Math.random();
+      x = z === 0 ? X0 + r * (NOW - W - 30 - X0) : z === 1 ? NOW - W + 40 + r * (W - 80) : NOW + 30 + r * (X1 - W - NOW - 30);
+    },
+    draw() {
+      const z = api.zone();
+      bar.setAttribute('x', x); barTxt.setAttribute('x', x + W/2);
+      clear(status);
+      if (!practice) S_.pill(status, Math.max(X0 + 120, Math.min(X1 - 120, x + W/2)), 190, TENSE5[z], C.sky, C.skyD, 32);
+      t.focus(z);
+    },
+  };
+  return api;
+}
+CTRL['5_1'] = (() => {
+  const host = D(5,1), d = BarDiagram(svgIn(host), false);
+  let s = 1, dir = 1, raf = null;
+  const mark = chipsIn(host, '主詞', SUBJ5.map(x => x.t), i => { s = i; render(); });
+  d.onMove(render);
+  function render() {
+    d.draw(); mark(s);
+    SEN(5,1).innerHTML = `${SUBJ5[s].t} ${V(SUBJ5[s].be[d.zone()] + ' baking')} a cake ${T(d.phrase())}.`;
+  }
+  return {
+    render,
+    explain() {
+      const z = d.zone();
+      const rows = [['過去進行式','S + was / were + V-ing','長條在 Now 左邊'],['現在進行式','S + am / is / are + V-ing','長條蓋住 Now'],['未來進行式','S + will be + V-ing','長條在 Now 右邊']];
+      return `<table>${rows.map((r, i) => `<tr class="${i === z ? 'hl' : ''}"><td>${r[0]}</td><td class="en">${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</table>`;
+    },
+    reset() { s = 1; d.x = d.NOW - d.W/2; render(); },
+    play() {
+      let last = performance.now();
+      const tick = tt => { d.x += dir * (tt - last) * 0.18; last = tt; if (d.x > d.X1 - d.W) { d.x = d.X1 - d.W; dir = -1; } if (d.x < d.X0) { d.x = d.X0; dir = 1; } render(); raf = requestAnimationFrame(tick); };
+      raf = requestAnimationFrame(tick);
+    },
+    stop() { cancelAnimationFrame(raf); },
+  };
+})();
+CTRL['5_2'] = (() => {
+  const d = BarDiagram(svgIn(D(5,2)), true);
+  let s = 2;
+  const ans = () => [`${SUBJ5[s].be[d.zone()]} baking`];
+  function render() { d.draw(); SEN(5,2).innerHTML = `${SUBJ5[s].t} ${blank('bake', ans())} a cake ${T(d.phrase())}.`; }
+  return {
+    render, answers: () => [ans()],
+    explain() {
+      const S = SUBJ5[s], z = d.zone();
+      const form = ['S + was / were + V-ing','S + am / is / are + V-ing','S + will be + V-ing'][z];
+      return `<ol><li><span>長條${['在 Now 的左邊','蓋住了 Now','在 Now 的右邊'][z]} <span class="arrow">→</span> <b>${TENSE5[z]}</b>：<span class="en">${form}</span></span></li>
+        <li><span>主詞 <b class="en">${S.t}</b>${z === 2 ? '：未來進行式不分單複數，一律用' : `是${S.why === 'I' ? ' I' : S.why}，所以用`} <b class="en">${S.be[z]}</b></span></li>
+        <li><span><span class="en">bake → <b>baking</b></span>（字尾不發音的 e，去 e 加 ing）</span></li>
+        <li><span class="en"><b>${S.t} ${S.be[z]} baking</b> a cake ${d.phrase()}.</span></li></ol>`;
+    },
+    randomize() { const oz = d.zone(), os = s; let z; do { z = rnd(3); s = rnd(3); } while (z === oz && s === os); d.randomZone(z); render(); },
+    reset() { s = 2; d.x = 1050; render(); },
+  };
+})();
+
+/* ---------- Topic 6：when 打斷 ---------- */
+CTRL['6_1'] = (() => {
+  const host = D(6,1), svg = svgIn(host), t = TL(svg);
+  const B1 = 240, B2 = 700;
+  let x = 470, order = 0, dir = 1, raf = null;
+  const mark = chipsIn(host, 'when 放在', ['句尾', '句首'], i => { order = i; render(); }, 'right');
+  S_.bar(svg, B1, B2, t.Y, ''); S_.text(svg, B1 + 20, t.Y - 70, 'take a shower', C.skyD, 30).setAttribute('text-anchor', 'start');
+  const status = el('g', {}, svg);
+  const g = el('g', {class:'drag'}, svg);
+  el('rect', {x:-60, y:t.Y-200, width:120, height:300, fill:'transparent'}, g);
+  const boltG = el('g', {}, g);
+  dragOn(g, svg, p => { x = Math.max(t.X0, Math.min(t.NOW - 40, p.x)); render(); });
+  function render() {
+    clear(boltG); S_.bolt(boltG, x, t.Y, 'the phone rang');
+    g.setAttribute('transform', '');
+    const inside = x > B1 + 10 && x < B2 - 10;
+    clear(status); S_.pill(status, 1130, 190, inside ? '✔ 洗澡洗到一半，電話響了' : '✘ 電話響的時候沒在洗澡', inside ? C.mint : C.pink, inside ? C.mintD : C.pinkD, 30);
+    t.focus(0); mark(order);
+    const s = order ? `${T('When the phone rang')}, I ${V('was taking')} a shower.` : `I ${V('was taking')} a shower ${T('when the phone rang')}.`;
+    SEN(6,1).innerHTML = inside ? `${s}<span class="sub">長動作用過去進行式，突然插進來的短動作用過去式</span>`
+      : `<span class="nope">${s.replace(/<[^>]+>/g, '')}</span><span class="sub">${x <= B1 + 10 ? '鈴響時還沒開始洗' : '鈴響時已經洗完了'} → 不能說 was taking　（把閃電拖進藍色長條）</span>`;
+  }
+  return {
+    render,
+    explain: () => `<ol><li><span>一直在做的<b>長動作</b>（藍色長條）<span class="arrow">→</span> 過去進行式 <span class="en">was / were + V-ing</span></span></li>
+      <li><span>突然發生的<b>短動作</b>（閃電）<span class="arrow">→</span> 過去簡單式 <span class="en">V-ed</span></span></li>
+      <li><span>閃電一定要打在長條<b>裡面</b>，才能用 <span class="en">when</span> 這樣接</span></li>
+      <li><span><span class="en">When</span> 子句放句首時，中間加<b>逗號</b></span></li></ol>`,
+    reset() { x = 470; order = 0; render(); },
+    play() {
+      let last = performance.now();
+      const tick = tt => { x += dir * (tt - last) * 0.2; last = tt; if (x > t.NOW - 40) { x = t.NOW - 40; dir = -1; } if (x < t.X0) { x = t.X0; dir = 1; } render(); raf = requestAnimationFrame(tick); };
+      raf = requestAnimationFrame(tick);
+    },
+    stop() { cancelAnimationFrame(raf); },
+  };
+})();
+CTRL['6_2'] = (() => {
+  const host = D(6,2), svg = svgIn(host), t = TL(svg);
+  const IT = [
+    {s:'I', lb:'take', lf:'was taking', lo:'a shower', ss:'the phone', sb:'ring', sf:'rang', sr:''},
+    {s:'Tom', lb:'cook', lf:'was cooking', lo:'dinner', ss:'the lights', sb:'go', sf:'went', sr:' out'},
+    {s:'We', lb:'play', lf:'were playing', lo:'basketball', ss:'it', sb:'start', sf:'started', sr:' to rain'},
+    {s:'Mia', lb:'read', lf:'was reading', lo:'a novel', ss:'her mom', sb:'come', sf:'came', sr:' home'},
+    {s:'The students', lb:'chat', lf:'were chatting', lo:'', ss:'the teacher', sb:'come', sf:'came', sr:' in'},
+    {s:'I', lb:'do', lf:'was doing', lo:'my homework', ss:'the power', sb:'go', sf:'went', sr:' out'},
+  ];
+  let i = 0, bx = 470;
+  function render() {
+    const it = IT[i];
+    clear(t.layer);
+    S_.bar(t.layer, 240, 700, t.Y, ''); S_.text(t.layer, 260, t.Y - 70, `${it.lb} ${it.lo}`.trim(), C.skyD, 30).setAttribute('text-anchor', 'start');
+    S_.bolt(t.layer, bx, t.Y, `${it.ss} ${it.sb}${it.sr}`);
+    t.focus(0);
+    SEN(6,2).innerHTML = `${it.s} ${blank(it.lb, [it.lf])}${it.lo ? ' ' + it.lo : ''} when ${it.ss} ${blank(it.sb, [it.sf])}${it.sr}.`;
+    SEN(6,2).classList.toggle('long', (it.s + it.lo + it.ss + it.sr).length > 28);
+  }
+  return {
+    render, answers: () => [[IT[i].lf], [IT[i].sf]],
+    explain() {
+      const it = IT[i];
+      return `<ol><li><span>藍色長條 = 一直在做的長動作 <span class="arrow">→</span> 過去進行式 <b class="en">${it.lf}</b></span></li>
+        <li><span>閃電 = 突然發生的短動作 <span class="arrow">→</span> 過去式 <span class="en">${it.sb} → <b>${it.sf}</b></span></span></li>
+        <li><span class="en"><b>${it.s} ${it.lf}</b>${it.lo ? ' ' + it.lo : ''} when ${it.ss} <b>${it.sf}</b>${it.sr}.</span></li></ol>`;
+    },
+    randomize() { const o = i; do { i = rnd(IT.length); } while (i === o); bx = 330 + rnd(280); render(); },
+    reset() { i = 0; bx = 470; render(); },
+  };
+})();
+
+/* ---------- Topic 7：現在完成式三種用法 ---------- */
+const PERF = ['經驗', '完成', '持續'];
+function perfShape(t, m, label) {
+  const L = t.layer; clear(L);
+  if (m === 0) {
+    S_.dot(L, 330, t.Y, 30); S_.dot(L, 560, t.Y, 30);
+    el('path', {d:`M330 ${t.Y+46} Q560 ${t.Y+150} ${t.NOW-10} ${t.Y+46}`, fill:'none', stroke:C.skyD, 'stroke-width':4, 'stroke-dasharray':'10 10'}, L);
+    if (label) S_.text(L, 445, t.Y - 62, label);
+    S_.pill(L, 470, 190, '經驗：到現在為止做過幾次', C.sky, C.skyD, 28);
+  } else if (m === 1) {
+    S_.dot(L, 680, t.Y, 34, C.mint, C.mintD);
+    S_.text(L, 680, t.Y + 12, '✔', '#fff', 30);
+    el('path', {d:`M716 ${t.Y} L${t.NOW-14} ${t.Y}`, stroke:C.mintD, 'stroke-width':6, 'stroke-dasharray':'6 8'}, L);
+    if (label) S_.text(L, 640, t.Y - 62, label, C.mintD);
+    S_.pill(L, 470, 190, '完成：已經 / 剛剛做完，結果留到現在', C.mint, C.mintD, 28);
+  } else {
+    S_.arrow(L, 300, t.NOW, t.Y, label);
+    S_.pill(L, 470, 190, '持續：從過去一直到現在', C.peach, C.peachD, 28);
+  }
+  t.focus(0);
+}
+CTRL['7_1'] = (() => {
+  const host = D(7,1), svg = svgIn(host), t = TL(svg);
+  const EX = [
+    {lab:'visit Japan', s:`I ${V('have visited')} Japan ${T('twice')}.`, adv:'ever, never, once, twice, before'},
+    {lab:'leave the office', s:`Sammy ${V('has')} ${T('already')} ${V('left')} the office.`, adv:'already, just, yet'},
+    {lab:'be friends', s:`Andrew and I ${V('have been')} friends ${T('for 15 years')}.`, adv:'since, for'},
+  ];
+  let m = 0, timer = null;
+  const mark = chipsIn(host, '用法', PERF, i => { m = i; render(); });
+  function render() { perfShape(t, m, EX[m].lab); mark(m); SEN(7,1).innerHTML = `${EX[m].s}<span class="sub">常搭配：<span class="en">${EX[m].adv}</span></span>`; }
+  return {
+    render,
+    explain: () => `<table><tr class="${m===0?'hl':''}"><td>經驗</td><td>到現在為止做過、沒做過</td><td class="en">Have you ever had a pet?</td></tr>
+      <tr class="${m===1?'hl':''}"><td>完成</td><td>已經做完，影響留到現在</td><td class="en">Sammy has already left the office.</td></tr>
+      <tr class="${m===2?'hl':''}"><td>持續</td><td>從過去一直延續到現在</td><td class="en">Leo's love for music has never changed.</td></tr></table>
+      <div class="note">公式都一樣：<span class="en">S + have / has + p.p.</span>（過去分詞見 p.38）</div>`,
+    reset() { m = 0; render(); },
+    play() { timer = setInterval(() => { m = (m + 1) % 3; render(); }, 1800); },
+    stop() { clearInterval(timer); },
+  };
+})();
+CTRL['7_2'] = (() => {
+  const host = D(7,2), svg = svgIn(host), t = TL(svg);
+  const IT = [
+    {s:'I', h:'have', b:'visit', pp:'visited', rest:'Japan twice', m:0},
+    {s:'Tina', h:'has', b:'see', pp:'seen', rest:'this movie three times', m:0},
+    {s:'We', h:'have', b:'eat', pp:'eaten', rest:'stinky tofu before', m:0},
+    {s:'They', h:'have', b:'finish', pp:'finished', rest:'their homework', m:1},
+    {s:'Ben', h:'has', b:'lose', pp:'lost', rest:'his key', m:1},
+    {s:'The train', h:'has', b:'leave', pp:'left', rest:'the station', m:1},
+    {s:'We', h:'have', b:'live', pp:'lived', rest:'here since 2015', m:2},
+    {s:'My dad', h:'has', b:'work', pp:'worked', rest:'in this factory for ten years', m:2},
+  ];
+  let i = 0;
+  function render() { const it = IT[i]; perfShape(t, it.m, `${it.b} …`); SEN(7,2).innerHTML = `${it.s} ${blank(it.b, [it.h + ' ' + it.pp])} ${it.rest}.`; }
+  return {
+    render, answers: () => [[`${IT[i].h} ${IT[i].pp}`]],
+    explain() {
+      const it = IT[i];
+      return `<ol><li><span>圖是「<b>${PERF[it.m]}</b>」<span class="arrow">→</span> 現在完成式 <span class="en">have / has + p.p.</span></span></li>
+        <li><span>主詞 <b class="en">${it.s}</b> <span class="arrow">→</span> <b class="en">${it.h}</b></span></li>
+        <li><span><span class="en">${it.b}</span> 的過去分詞是 <b class="en">${it.pp}</b>${it.pp.endsWith('ed') ? '' : '（不規則，見 p.38）'}</span></li>
+        <li><span class="en"><b>${it.s} ${it.h} ${it.pp}</b> ${it.rest}.</span></li></ol>`;
+    },
+    randomize() { const o = i; do { i = rnd(IT.length); } while (i === o); render(); },
+    reset() { i = 0; render(); },
+  };
+})();
+
+/* ---------- Topic 8：since / for ---------- */
+function SinceDiagram(svg, practice) {
+  const Y0 = 1990, Y1 = 2026, X0 = 140, X1 = 1380, Y = 300;
+  const xOf = yr => X0 + (yr - Y0) / (Y1 - Y0) * (X1 - X0);
+  el('line', {x1:X0-30, y1:Y, x2:X1+70, y2:Y, stroke:C.ink3, 'stroke-width':12, 'stroke-linecap':'round'}, svg);
+  el('path', {d:`M${X1+68} ${Y-20} L${X1+98} ${Y} L${X1+68} ${Y+20} Z`, fill:C.ink3, 'stroke-linejoin':'round', stroke:C.ink3, 'stroke-width':6}, svg);
+  for (let yr = Y0; yr <= Y1; yr++) {
+    const big = yr % 5 === 0;
+    el('circle', {cx:xOf(yr), cy:Y, r:big ? 6 : 3, fill:'#fff'}, svg);
+    if (big && yr < 2025) el('text', {x:xOf(yr), y:Y+72, 'text-anchor':'middle', 'font-size':26, fill:C.ink2}, svg, yr);
+  }
+  const nx = xOf(Y1);
+  el('line', {x1:nx, y1:90, x2:nx, y2:410, stroke:C.lavD, 'stroke-width':5, 'stroke-dasharray':'2 14', 'stroke-linecap':'round'}, svg);
+  el('rect', {x:nx-66, y:418, width:132, height:54, rx:27, fill:C.lavD}, svg);
+  el('text', {x:nx, y:456, 'text-anchor':'middle', 'font-size':34, 'font-weight':800, fill:'#fff'}, svg, 'Now');
+  el('text', {x:nx, y:504, 'text-anchor':'middle', 'font-size':26, fill:C.lavD}, svg, Y1);
+  const bar = el('rect', {y:Y-40, height:80, rx:40, fill:C.sky, stroke:'#fff', 'stroke-width':6}, svg);
+  const brace = el('path', {fill:'none', stroke:C.skyD, 'stroke-width':5, 'stroke-linecap':'round', 'stroke-linejoin':'round'}, svg);
+  const forG = el('g', {}, svg);
+  const workTxt = el('text', {y:Y+11, 'text-anchor':'middle', 'font-size':28, 'font-weight':800, fill:C.skyD}, svg, 'has worked here');
+  const h = el('g', {class: practice ? '' : 'drag'}, svg);
+  const hHit = el('rect', {y:Y-80, width:120, height:280, fill:'transparent'}, h);
+  const hKnob = el('circle', {cy:Y, r:36, fill:C.peach, stroke:'#fff', 'stroke-width':8}, h);
+  const hDot = el('circle', {cy:Y, r:11, fill:C.peachD}, h);
+  const yrG = el('g', {}, h);
+  let start = 1997, onMove = () => {};
+  if (!practice) dragOn(h, svg, p => {
+    const yr = Math.round(Y0 + (p.x - X0) / (X1 - X0) * (Y1 - Y0));
+    start = Math.max(Y0, Math.min(Y1 - 1, yr)); onMove();
+  });
+  const api = {
+    Y0, Y1,
+    get start() { return start; }, set start(v) { start = v; },
+    get n() { return Y1 - start; },
+    forText() { const n = Y1 - start; return `for ${n} year${n > 1 ? 's' : ''}`; },
+    onMove(fn) { onMove = fn; },
+    draw() {
+      const xs = xOf(start), xe = xOf(Y1), mid = (xs + xe) / 2;
+      bar.setAttribute('x', xs); bar.setAttribute('width', xe - xs);
+      workTxt.setAttribute('x', mid + 20); workTxt.style.display = (xe - xs) > 300 ? '' : 'none';
+      brace.setAttribute('d', `M${xs} ${Y-58} Q${xs} ${Y-78} ${xs+20} ${Y-78} L${xe-20} ${Y-78} Q${xe} ${Y-78} ${xe} ${Y-58} M${mid} ${Y-78} L${mid} ${Y-106}`);
+      clear(forG); S_.pill(forG, Math.max(220, mid), Y - 134, practice ? '? years' : api.forText(), C.skyL, C.skyD, 38);
+      hKnob.setAttribute('cx', xs); hDot.setAttribute('cx', xs); hHit.setAttribute('x', xs - 60);
+      clear(yrG); S_.pill(yrG, Math.max(200, xs), Y + 140, practice ? `${start}` : `since ${start}`, C.peachL, C.peachD, 36);
+    },
+  };
+  return api;
+}
+CTRL['8_1'] = (() => {
+  const d = SinceDiagram(svgIn(D(8,1)), false);
+  let raf = null;
+  d.onMove(render);
+  function render() { d.draw(); SEN(8,1).innerHTML = `My dad ${V('has worked')} here ${T('since ' + d.start)}.<span class="sub">＝ My dad has worked here ${T(d.forText())}.　（拖動橘色圓點）</span>`; }
+  return {
+    render,
+    explain: () => `<ol><li><span><b class="en">since</b> ＋ 過去的<b>時間點</b>：<span class="en">since ${d.start}、since he was 20、since last year</span></span></li>
+      <li><span><b class="en">for</b> ＋ 一段<b>時間長度</b>：<span class="en">${d.forText()}、for two weeks、for a long time</span></span></li>
+      <li><span>兩個都搭配現在完成式 <span class="en">has / have + p.p.</span>，表示從過去<b>一直持續到現在</b></span></li></ol>`,
+    reset() { d.start = 1997; render(); },
+    play() {
+      let acc = 0, last = performance.now();
+      const tick = tt => { acc += tt - last; last = tt; if (acc > 450) { acc = 0; d.start = d.start <= d.Y0 ? d.Y1 - 1 : d.start - 1; render(); } raf = requestAnimationFrame(tick); };
+      raf = requestAnimationFrame(tick);
+    },
+    stop() { cancelAnimationFrame(raf); },
+  };
+})();
+CTRL['8_2'] = (() => {
+  const d = SinceDiagram(svgIn(D(8,2)), true);
+  const ans = () => [`since ${d.start}`, d.forText()];
+  function render() { d.draw(); SEN(8,2).innerHTML = `My dad ${V('has worked')} here ${blank('since / for …', ans())}.`; }
+  return {
+    render, answers: () => [ans()],
+    explain: () => `<ol><li><span>橘點是開始的那一年 <b class="en">${d.start}</b> <span class="arrow">→</span> <b class="en">since ${d.start}</b></span></li>
+      <li><span>從 ${d.start} 到 ${d.Y1}，一共 <b>${d.n} 年</b> <span class="arrow">→</span> <b class="en">${d.forText()}</b></span></li>
+      <li><span>兩種寫法都對：<b>since</b> 看「起點」，<b>for</b> 看「多長」</span></li></ol>`,
+    randomize() { const o = d.start; do { d.start = d.Y0 + rnd(d.Y1 - d.Y0 - 4); } while (d.start === o); render(); },
+    reset() { d.start = 2003; render(); },
+  };
+})();
+
+/* ---------- Topic 9：been to / gone to ---------- */
+function TripDiagram(svg) {
+  const HX = 330, DX = 1270, Y = 330;
+  const bez = (p0, c, p1, u) => (1-u)*(1-u)*p0 + 2*(1-u)*u*c + u*u*p1;
+  const TY = Y - 150;
+  const goPath = `M${HX} ${TY} Q800 -100 ${DX} ${TY}`, backPath = `M${DX} ${TY} Q800 560 ${HX} ${TY}`;
+  el('path', {d:goPath, fill:'none', stroke:C.line, 'stroke-width':8, 'stroke-dasharray':'4 16', 'stroke-linecap':'round'}, svg);
+  el('path', {d:backPath, fill:'none', stroke:C.line, 'stroke-width':8, 'stroke-dasharray':'4 16', 'stroke-linecap':'round'}, svg);
+  const trail = el('g', {}, svg);
+  el('path', {d:`M${HX-90} ${Y-10} L${HX} ${Y-90} L${HX+90} ${Y-10} Z`, fill:C.pink, stroke:'#fff', 'stroke-width':6, 'stroke-linejoin':'round'}, svg);
+  el('rect', {x:HX-70, y:Y-14, width:140, height:100, rx:14, fill:C.pinkL, stroke:C.pink, 'stroke-width':5}, svg);
+  el('rect', {x:HX-20, y:Y+30, width:40, height:56, rx:8, fill:C.pink}, svg);
+  S_.text(svg, HX, Y + 136, 'Home', C.pinkD, 32);
+  el('circle', {cx:DX, cy:Y, r:96, fill:C.mintL, stroke:C.mint, 'stroke-width':8}, svg);
+  const placeTxt = S_.text(svg, DX, Y + 14, '', C.mintD, 40);
+  const status = el('g', {}, svg);
+  const tok = el('g', {}, svg);
+  el('circle', {cx:0, cy:0, r:40, fill:C.lav, stroke:'#fff', 'stroke-width':7}, tok);
+  const initTxt = S_.text(tok, 0, 12, '', C.lavD, 34);
+  const nameTxt = S_.text(tok, 0, -58, '', C.lavD, 28);
+  function pos(t) {
+    if (t <= 1) return [bez(HX, 800, DX, t), bez(TY, -100, TY, t)];
+    const u = Math.min(1, t - 1); return [bez(DX, 800, HX, u), bez(TY, 560, TY, u)];
+  }
+  return {
+    set(place, name) { placeTxt.textContent = place; initTxt.textContent = name[0].toUpperCase(); nameTxt.textContent = name; },
+    draw(t, showStatus, place) {
+      const [x, y] = pos(t);
+      tok.setAttribute('transform', `translate(${x} ${y})`);
+      clear(trail);
+      const steps = 40;
+      const pts = [];
+      for (let k = 0; k <= steps; k++) { const tt = t * k / steps; pts.push(pos(tt)); }
+      el('polyline', {points: pts.map(p => p.join(',')).join(' '), fill:'none', stroke:C.lavD, 'stroke-width':6, 'stroke-linecap':'round', 'stroke-linejoin':'round', opacity:.55}, trail);
+      clear(status);
+      if (showStatus) {
+        const where = t <= 0.02 ? '在家（還沒出發）' : t < 0.98 ? '在路上' : t < 1.02 ? `在 ${place}` : t < 1.98 ? '在回家的路上' : '回到家了';
+        S_.pill(status, 800, 520, 'Now：' + where, C.lavL, C.lavD, 30);
+      }
+    },
+  };
+}
+CTRL['9_1'] = (() => {
+  const host = D(9,1), svg = svgIn(host), d = TripDiagram(svg);
+  d.set('Korea', 'Kate');
+  let m = 0, tt = 0, raf = null;
+  const mark = chipsIn(host, '', ['been to', 'gone to'], i => { m = i; tt = 0; render(); App.play(); });
+  const end = () => m === 0 ? 2 : 1;
+  function render() {
+    d.draw(tt, true, 'Korea'); mark(m);
+    SEN(9,1).innerHTML = m === 0 ? `Kate ${V('has been to')} Korea.<span class="sub">去過，而且已經回來了</span>` : `Kate ${V('has gone to')} Korea.<span class="sub">已經去了，人還在那裡（或在路上）</span>`;
+  }
+  return {
+    render,
+    explain: () => `<table><tr class="${m===0?'hl':''}"><td class="en">have / has been to</td><td>曾經去過某地，<b>現在已經回來</b></td><td class="en">Kate has been to Korea. She hopes to go there again.</td></tr>
+      <tr class="${m===1?'hl':''}"><td class="en">have / has gone to</td><td>已經去了，<b>人還在那裡或在路上</b></td><td class="en">Kate has gone to Korea on vacation. She will be back next Monday.</td></tr></table>
+      <div class="note">口訣：<b>been</b> 去了又回來，<b>gone</b> 去了還沒回來。</div>`,
+    reset() { m = 0; tt = 0; render(); },
+    play() {
+      if (tt >= end()) tt = 0;
+      let last = performance.now();
+      const tick = x => { tt = Math.min(end(), tt + (x - last) / 1800); last = x; render(); if (tt < end()) raf = requestAnimationFrame(tick); else App.pauseForUser(); };
+      raf = requestAnimationFrame(tick);
+    },
+    stop() { cancelAnimationFrame(raf); },
+  };
+})();
+CTRL['9_2'] = (() => {
+  const svg = svgIn(D(9,2)), d = TripDiagram(svg);
+  const IT = [{s:'Kate', h:'has', p:'Korea'}, {s:'Mr. Lin', h:'has', p:'Japan'}, {s:'My parents', h:'have', p:'Tainan'}, {s:'Jim', h:'has', p:'Taichung'}, {s:'We', h:'have', p:'Hualien'}];
+  let i = 0, m = 1;
+  const ans = () => [(m ? 'gone' : 'been') + ' to'];
+  function render() {
+    const it = IT[i];
+    d.set(it.p, it.s === 'We' ? 'We' : it.s.replace('My ', '').replace('Mr. ', 'Mr.'));
+    d.draw(m ? 1 : 2, false, it.p);
+    SEN(9,2).innerHTML = `${it.s} ${it.h} ${blank('been / gone …', ['been to'])} ${it.p}.`;
+  }
+  return {
+    render, answers: () => [ans()],
+    explain() {
+      const it = IT[i];
+      return `<ol><li><span>看圖：${it.s === 'We' ? '我們' : `<span class="en">${it.s}</span>`}現在${m ? `<b>人在 <span class="en">${it.p}</span></b>，還沒回家` : '<b>已經回到家</b>'}</span></li>
+        <li><span>${m ? '去了還沒回來 <span class="arrow">→</span> <b class="en">gone to</b>' : '去了又回來 <span class="arrow">→</span> <b class="en">been to</b>'}</span></li>
+        <li><span class="en"><b>${it.s} ${it.h} ${ans()[0]}</b> ${it.p}.</span></li></ol>`;
+    },
+    randomize() { const o = [i, m]; do { i = rnd(IT.length); m = rnd(2); } while (i === o[0] && m === o[1]); render(); },
+    reset() { i = 0; m = 1; render(); },
+  };
+})();
+
+/* ---------- Topic 10：時態地圖 ---------- */
+const EX10 = {
+  'past-simple':   `Ethan ${V('paid')} his phone bill ${T('yesterday')}.`,
+  'present-simple':`I ${T('usually')} ${V('have')} an egg for breakfast.`,
+  'future-simple': `Kevin ${V('will pay')} for Ethan's lunch.`,
+  'past-cont':     `Teddy ${V('was using')} his computer ${T('an hour ago')}.`,
+  'present-cont':  `Lucy ${V('is baking')} a cake ${T('now')}.`,
+  'future-cont':   `I ${V('will be cooking')} dinner ${T('at 6 tonight')}.`,
+  'present-perf':  `Andrew and I ${V('have been')} friends ${T('for 15 years')}.`,
+};
+const KEYS10 = Object.keys(CELLS);
+CTRL['10_1'] = (() => {
+  const host = D(10,1);
+  host.innerHTML = `<div class="tmap"><div class="tgrid"></div><div class="tdetail"><div class="nm"></div><div class="fm en"></div></div></div>`;
+  const grid = host.querySelector('.tgrid'), det = host.querySelector('.tdetail');
+  const mini = svgIn(det, '70 60 1460 460'), t = TL(mini);
+  grid.innerHTML = `<div></div>` + ['簡單式（點）','進行式（線）','完成式（箭頭）'].map(h => `<div class="h col">${h}</div>`).join('');
+  const cellBtns = {};
+  ['過去','現在','未來'].forEach((rn, r) => {
+    grid.insertAdjacentHTML('beforeend', `<div class="h">${rn}</div>`);
+    [0, 1, 2].forEach(c => {
+      const key = KEYS10.find(k => CELLS[k].row === r && CELLS[k].col === c);
+      const b = document.createElement('button');
+      b.className = 'tcell' + (key ? '' : ' lock');
+      b.innerHTML = key ? `${CELLS[key].n}<small>${CELLS[key].f}</small>` : `${rn}完成式<small>之後會學</small>`;
+      if (key) { b.onclick = () => { App.pauseForUser(); sel = key; render(); }; cellBtns[key] = b; }
+      grid.appendChild(b);
+    });
+  });
+  let sel = 'present-cont', timer = null;
+  function render() {
+    Object.entries(cellBtns).forEach(([k, b]) => b.classList.toggle('on', k === sel));
+    det.querySelector('.nm').textContent = CELLS[sel].n;
+    det.querySelector('.fm').textContent = CELLS[sel].f;
+    drawCell(t, sel, '');
+    SEN(10,1).innerHTML = EX10[sel];
+  }
+  return {
+    render,
+    explain: () => `<ol><li><span>時態 ＝ <b>時間</b>（過去 / 現在 / 未來）× <b>樣子</b>（點 / 線 / 箭頭）</span></li>
+      <li><span><b>點</b>：發生一次或習慣 <span class="arrow">→</span> 簡單式</span></li>
+      <li><span><b>線</b>：那個時間正在進行 <span class="arrow">→</span> 進行式</span></li>
+      <li><span><b>箭頭</b>：從過去連到現在 <span class="arrow">→</span> 現在完成式</span></li></ol>`,
+    reset() { sel = 'present-cont'; render(); },
+    play() { timer = setInterval(() => { sel = KEYS10[(KEYS10.indexOf(sel) + 1) % KEYS10.length]; render(); }, 1600); },
+    stop() { clearInterval(timer); },
+  };
+})();
+CTRL['10_2'] = (() => {
+  const svg = svgIn(D(10,2)), t = TL(svg);
+  const SUBJ = [{t:'Lucy', third:true, bp:'was', bn:'is', h:'has'}, {t:'I', third:false, bp:'was', bn:'am', h:'have'}, {t:'Lucy and Teddy', third:false, bp:'were', bn:'are', h:'have'}];
+  let k = 'past-cont', s = 0;
+  function ans() {
+    const S = SUBJ[s];
+    return { 'past-simple':['baked'], 'present-simple':[S.third ? 'bakes' : 'bake'], 'future-simple':['will bake', `${S.bn} going to bake`],
+      'past-cont':[`${S.bp} baking`], 'present-cont':[`${S.bn} baking`], 'future-cont':['will be baking'], 'present-perf':[`${S.h} baked`] }[k];
+  }
+  function render() { drawCell(t, k, 'bake cookies'); SEN(10,2).innerHTML = `${SUBJ[s].t} ${blank('bake', ans())} cookies.`; }
+  return {
+    render, answers: () => [ans()],
+    explain() {
+      const c = CELLS[k], shape = c.col === 0 ? (k === 'present-simple' ? '一個個點' : '一個點') : c.col === 1 ? '一條線' : '連到 Now 的箭頭';
+      return `<ol><li><span>圖形是<b>${shape}</b>，在 ${['過去','現在（Now）','未來'][c.row]} <span class="arrow">→</span> <b>${c.n}</b></span></li>
+        <li><span>公式：<span class="en">${c.f}</span></span></li>
+        <li><span class="en"><b>${SUBJ[s].t} ${ans()[0]}</b> cookies.</span></li></ol>`;
+    },
+    randomize() { const o = [k, s]; do { k = pick(KEYS10); s = rnd(3); } while (k === o[0] && s === o[1]); render(); },
+    reset() { k = 'past-cont'; s = 0; render(); },
+  };
+})();
+
+/* ---------- Topic 11：解題三步驟 + 課本 12 題 ---------- */
+const BOOK = [
+  {src:'p.7 第 1 題', pre:'We never', b:'feel', post:'bored when we watch sports.', a:['feel'], k:'present-simple', clue:'never（頻率副詞）', why:'習慣 → 現在簡單式；主詞 We 用原形'},
+  {src:'p.7 第 2 題', pre:'My brother hates meat. He always', b:'have', post:'vegetables.', a:['has'], k:'present-simple', clue:'always（頻率副詞）', why:'習慣 → 現在簡單式；主詞 He 第三人稱單數 → has'},
+  {src:'p.7 第 3 題', pre:'Uncle Joe', b:'not come', post:'to the family dinner yesterday.', a:["didn't come", 'did not come'], k:'past-simple', clue:'yesterday', why:"過去簡單式否定：didn't + 原形"},
+  {src:'p.7 第 4 題', pre:'Vivian and David', b:'take', post:'a vacation in Japan next week.', a:['will take', 'are going to take'], k:'future-simple', clue:'next week', why:'未來：will + 原形（或 are going to + 原形）'},
+  {src:'p.19 第 1 題', pre:'The students', b:'chat', post:'when the teacher came.', a:['were chatting'], k:'past-cont', clue:'when the teacher came', why:'老師進來那一刻「正在」聊天 → were + V-ing（chat 重複 t）'},
+  {src:'p.19 第 2 題', pre:'Karen', b:'have', post:'an online meeting right now.', a:['is having'], k:'present-cont', clue:'right now', why:'現在正在進行 → is + V-ing（have 去 e 加 ing）'},
+  {src:'p.19 第 3 題', pre:'I', b:'travel', post:'around the island this time next week.', a:['will be traveling', 'will be travelling'], k:'future-cont', clue:'this time next week', why:'未來某個時間正在進行 → will be + V-ing'},
+  {src:'p.19 第 4 題', pre:'I', b:'do', post:'my homework when the power went out last night.', a:['was doing'], k:'past-cont', clue:'when the power went out last night', why:'停電那一刻正在寫 → was + V-ing'},
+  {src:'p.25 第 1 題', pre:'My grandpa has lived in New Taipei City', b:'since / for', post:'2003.', a:['since'], k:'present-perf', clue:'2003（時間點）', why:'since + 時間點'},
+  {src:'p.25 第 2 題', pre:'Jess has played the piano', b:'since / for', post:'8 years.', a:['for'], k:'present-perf', clue:'8 years（一段時間）', why:'for + 一段時間'},
+  {src:'p.25 第 3 題', pre:'', b:'Have / Has', post:'Dan and Tom done their homework?', a:['Have'], k:'present-perf', clue:'Dan and Tom（複數主詞）', why:'複數主詞配 Have，放句首變成問句'},
+  {src:'p.25 第 4 題', pre:'Jim has', b:'gone / been', post:"to Taichung and won't be back until Friday.", a:['gone'], k:'present-perf', clue:"won't be back（人還沒回來）", why:'去了還沒回來 → gone to'},
+];
+CTRL['11_1'] = (() => {
+  const host = D(11,1);
+  const EXS = [2, 5, 6, 9];
+  host.innerHTML = `<div class="steps">
+    <div class="stepc"><h4><b>1</b>圈出時間線索</h4><div class="big en" data-k="clue"></div><div class="small">看 yesterday、now、when…、since / for 這類字</div></div>
+    <div class="stepc"><h4><b>2</b>放上時間軸</h4><div class="small" data-k="name"></div></div>
+    <div class="stepc"><h4><b>3</b>套公式寫動詞</h4><div class="big en" data-k="form"></div><div class="small" data-k="why"></div></div></div>`;
+  const mini = svgIn(host.querySelectorAll('.stepc')[1], '70 60 1460 460'), t = TL(mini);
+  let e = 0, timer = null;
+  const mark = chipsIn(host, '例題', EXS.map((_, i) => `例 ${i + 1}`), i => { e = i; render(); });
+  function render() {
+    const q = BOOK[EXS[e]];
+    host.querySelector('[data-k=clue]').textContent = q.clue;
+    host.querySelector('[data-k=name]').textContent = CELLS[q.k].n;
+    host.querySelector('[data-k=form]').textContent = CELLS[q.k].f;
+    host.querySelector('[data-k=why]').textContent = q.why;
+    drawCell(t, q.k, ''); mark(e);
+    SEN(11,1).classList.add('long');
+    SEN(11,1).innerHTML = `${q.pre} ${V(q.a[0])} ${q.post}<span class="sub">課本 ${q.src}</span>`;
+  }
+  return {
+    render,
+    explain: () => `<ol><li><span>先找<b>時間線索</b>：時間副詞、<span class="en">when</span> 子句、<span class="en">since / for</span>、頻率副詞</span></li>
+      <li><span>想像它在<b>時間軸</b>上的樣子：點、線、還是連到 Now 的箭頭</span></li>
+      <li><span>套<b>公式</b>，最後檢查主詞單複數和動詞變化</span></li></ol>`,
+    reset() { e = 0; render(); },
+    play() { timer = setInterval(() => { e = (e + 1) % EXS.length; render(); }, 2200); },
+    stop() { clearInterval(timer); },
+  };
+})();
+CTRL['11_2'] = (() => {
+  const host = D(11,2), svg = svgIn(host), t = TL(svg);
+  const tag = document.createElement('div'); tag.className = 'qno'; host.appendChild(tag);
+  let i = 0;
+  function render() {
+    const q = BOOK[i];
+    tag.textContent = `第 ${i + 1} / ${BOOK.length} 題 · 課本 ${q.src}`;
+    drawCell(t, q.k, '');
+    SEN(11,2).classList.add('long');
+    SEN(11,2).innerHTML = `${q.pre} ${blank(q.b, q.a)} ${q.post}`;
+  }
+  return {
+    askLabel: '下一題',
+    render, answers: () => [BOOK[i].a],
+    explain() {
+      const q = BOOK[i];
+      return `<ol><li><span>時間線索：<b class="en">${q.clue}</b></span></li>
+        <li><span>時間軸 <span class="arrow">→</span> <b>${CELLS[q.k].n}</b>：<span class="en">${CELLS[q.k].f}</span></span></li>
+        <li><span>${q.why}</span></li>
+        <li><span class="en">${q.pre} <b>${q.a[0]}</b> ${q.post}</span></li></ol>`;
+    },
+    randomize() { i = (i + 1) % BOOK.length; render(); },
+    reset() { i = 0; render(); },
+  };
+})();
+
+/* ================= Drawing tools ================= */
+const Ink = (() => {
+  const cv = $('#ink'), ctx = cv.getContext('2d'), stage = $('#stage');
+  const COLORS = [['#e8476f','桃紅'],['#3a78b0','藍'],['#2f8a66','綠'],['#e08a1e','橘'],['#6d58b8','紫']];
+  const strokes = {};
+  let page = 0, tool = 'pointer', color = COLORS[0][0], cur = null, laser = [], raf = null;
+  COLORS.forEach(([c, n]) => {
+    const b = document.createElement('button');
+    b.className = 'swb'; b.dataset.color = c; b.dataset.tip = n + '色畫筆';
+    b.innerHTML = `<span class="sw" style="background:${c}"></span>`;
+    b.onclick = () => { color = c; setTool('pen'); };
+    $('#swatches').appendChild(b);
+  });
+  document.querySelectorAll('#tools [data-tool]').forEach(b => b.onclick = () => setTool(tool === b.dataset.tool && b.dataset.tool !== 'pointer' ? 'pointer' : b.dataset.tool));
+  $('#bTrash').onclick = clearInk;
+  function list() { return strokes[page] || (strokes[page] = []); }
+  function setTool(t) {
+    tool = t;
+    stage.classList.remove('t-pen', 't-eraser', 't-laser');
+    stage.classList.toggle('drawing', t !== 'pointer');
+    if (t !== 'pointer') stage.classList.add('t-' + t);
+    document.querySelectorAll('#tools [data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t));
+    document.querySelectorAll('#swatches .swb').forEach(b => b.classList.toggle('on', t === 'pen' && b.dataset.color === color));
+    laser = []; redraw();
+  }
+  function pos(e) {
+    const r = cv.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * 1920 / r.width, y: (e.clientY - r.top) * 1080 / r.height, t: performance.now() };
+  }
+  function drawStroke(s) {
+    ctx.strokeStyle = s.color; ctx.lineWidth = s.w; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    s.pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+    if (s.pts.length === 1) ctx.lineTo(s.pts[0].x + .1, s.pts[0].y);
+    ctx.stroke();
+  }
+  function redraw() {
+    ctx.clearRect(0, 0, 1920, 1080);
+    list().forEach(drawStroke);
+    if (tool === 'laser' && laser.length) {
+      const now = performance.now();
+      laser = laser.filter(p => now - p.t < 700);
+      for (let i = 1; i < laser.length; i++) {
+        const a = 1 - (now - laser[i].t) / 700;
+        ctx.strokeStyle = `rgba(232,71,111,${a * .55})`; ctx.lineWidth = 14 * a + 2; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(laser[i-1].x, laser[i-1].y); ctx.lineTo(laser[i].x, laser[i].y); ctx.stroke();
+      }
+      const h = laser[laser.length - 1];
+      if (h) {
+        ctx.fillStyle = 'rgba(232,71,111,.25)'; ctx.beginPath(); ctx.arc(h.x, h.y, 26, 0, 7); ctx.fill();
+        ctx.fillStyle = '#e8476f'; ctx.beginPath(); ctx.arc(h.x, h.y, 11, 0, 7); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(h.x - 3, h.y - 3, 3.5, 0, 7); ctx.fill();
+      }
+    }
+  }
+  function laserLoop() { redraw(); raf = laser.length ? requestAnimationFrame(laserLoop) : null; }
+  function eraseAt(p) {
+    const L = list(), R = 26;
+    for (let i = L.length - 1; i >= 0; i--)
+      if (L[i].pts.some(q => Math.hypot(q.x - p.x, q.y - p.y) < R + L[i].w / 2)) L.splice(i, 1);
+    redraw();
+  }
+  cv.addEventListener('pointerdown', e => {
+    cv.setPointerCapture(e.pointerId);
+    const p = pos(e);
+    if (tool === 'pen') { cur = { color, w: 7, pts: [p] }; list().push(cur); redraw(); }
+    else if (tool === 'eraser') { cur = 'erasing'; eraseAt(p); }
+  });
+  cv.addEventListener('pointermove', e => {
+    const p = pos(e);
+    if (tool === 'laser') { laser.push(p); if (!raf) raf = requestAnimationFrame(laserLoop); return; }
+    if (!cur) return;
+    if (tool === 'pen') { cur.pts.push(p); redraw(); }
+    else if (tool === 'eraser') eraseAt(p);
+  });
+  const end = () => { cur = null; };
+  cv.addEventListener('pointerup', end);
+  cv.addEventListener('pointercancel', end);
+  function clearInk() { strokes[page] = []; redraw(); }
+  setTool('pointer');
+  return {
+    setTool, clear: clearInk,
+    get tool() { return tool; },
+    setPage(i) { page = i; laser = []; redraw(); },
+  };
+})();
+
+/* ================= App / teacher controls ================= */
+const App = (() => {
+  const slides = [...document.querySelectorAll('.slide')];
+  const ctrls = slides.map(s => CTRL[`${s.dataset.topic}_${s.dataset.k}`]);
+  const score = slides.map(() => ({ ok: 0, total: 0 }));
+  let cur = 0, playing = false;
+  const stage = $('#stage');
+  const isPractice = i => slides[i].dataset.kind === 'practice';
+
+  const UI = slides.map((sl, i) => {
+    const diag = sl.querySelector('.diagram');
+    if (!isPractice(i)) {
+      const exbtn = document.createElement('button');
+      exbtn.className = 'exbtn'; exbtn.innerHTML = ICON.bulb + '講解 <kbd>H</kbd>';
+      exbtn.onclick = () => toggleExplain(true);
+      diag.appendChild(exbtn);
+    }
+    const ex = document.createElement('div');
+    ex.className = 'explain';
+    ex.innerHTML = `<div class="exbox"><button class="close" aria-label="關閉">✕</button><h3>講解 <span>${isPractice(i) ? '這一題' : '重點整理'}</span></h3><div class="exbody"></div></div>`;
+    ex.onclick = e => { if (e.target === ex || e.target.classList.contains('close')) toggleExplain(false); };
+    sl.appendChild(ex);
+    let fb = null, exb = null, row = null;
+    if (isPractice(i)) {
+      row = document.createElement('div');
+      row.className = 'actions';
+      row.innerHTML = `<button class="go">對答案 <kbd>Enter</kbd></button><span class="fb"></span><button class="ex">${ICON.bulb}講解 <kbd>H</kbd></button><button class="see">看答案</button><button class="ask">${ctrls[i].askLabel || '換一題'} <kbd>Q</kbd></button><span class="score"></span>`;
+      sl.querySelector('.below').appendChild(row);
+      row.querySelector('.go').onclick = () => check(i);
+      row.querySelector('.ask').onclick = () => ask(i);
+      row.querySelector('.see').onclick = () => showAnswer(i);
+      row.querySelector('.ex').onclick = () => toggleExplain(true);
+      fb = row.querySelector('.fb'); exb = row.querySelector('.ex');
+    }
+    return { ex, fb, exb, row };
+  });
+
+  function blanks(i) { return [...slides[i].querySelectorAll('input.blank')]; }
+  function feedback(i, cls, text) { UI[i].fb.className = 'fb ' + cls; UI[i].fb.textContent = text; }
+  function renderScore(i) { if (UI[i].row) UI[i].row.querySelector('.score').innerHTML = `答對 <b>${score[i].ok}</b> / ${score[i].total}`; }
+  const norm = t => t.toLowerCase().replace(/[’‘]/g, "'").replace(/[.,!?。，]/g, '').replace(/\s+/g, ' ').trim();
+  function wireBlanks(i) {
+    blanks(i).forEach(b => b.addEventListener('input', () => { b.classList.remove('ok', 'bad'); feedback(i, '', ''); }));
+  }
+  function check(i) {
+    const ins = blanks(i), vals = ins.map(x => x.value);
+    const empty = ins.find(x => !norm(x.value));
+    if (empty) { feedback(i, 'bad', '先填入學生的答案'); empty.focus(); return; }
+    const ans = ctrls[i].answers();
+    const each = vals.map((v, j) => ans[j].map(norm).includes(norm(v)));
+    ins.forEach((x, j) => { x.classList.remove('ok', 'bad'); void x.offsetWidth; x.classList.add(each[j] ? 'ok' : 'bad'); });
+    score[i].total++;
+    if (each.every(Boolean)) { score[i].ok++; feedback(i, 'ok', '✔ 答對了！'); }
+    else feedback(i, 'bad', '再想想，或打開講解');
+    UI[i].exb.classList.add('ready');
+    renderScore(i);
+  }
+  function showAnswer(i) {
+    const ans = ctrls[i].answers();
+    blanks(i).forEach((x, j) => { x.value = ans[j][0]; x.classList.remove('bad'); x.classList.add('ok'); });
+    feedback(i, 'show', ans.some(a => a.length > 1) ? '也可以寫：' + ans.map(a => a.slice(1).join('、')).join(' ') : '這是答案');
+    UI[i].exb.classList.add('ready');
+  }
+  function ask(i) {
+    if (!isPractice(i)) return;
+    toggleExplain(false);
+    ctrls[i].randomize(); wireBlanks(i);
+    feedback(i, '', ''); UI[i].exb.classList.remove('ready');
+    blanks(i)[0].focus();
+  }
+  function toggleExplain(force) {
+    const sl = slides[cur];
+    const open = force ?? !sl.classList.contains('exopen');
+    if (open) { UI[cur].ex.querySelector('.exbody').innerHTML = ctrls[cur].explain(); setPlaying(false); }
+    sl.classList.toggle('exopen', open);
+  }
+
+  /* table of contents */
+  const tints = [['var(--pink)','var(--pink-d)'],['var(--sky)','var(--sky-d)'],['var(--mint)','var(--mint-d)'],['var(--peach)','var(--peach-d)'],['var(--lav)','var(--lav-d)']];
+  DEFS.forEach(([no, , ref], k) => {
+    const c = slides.findIndex(s => +s.dataset.topic === no && s.dataset.kind === 'concept');
+    const item = document.createElement('div');
+    item.className = 'tocitem'; item.dataset.topic = no;
+    const [bg, fg] = tints[k % tints.length];
+    item.innerHTML = `<span class="n en" style="background:${bg};color:${fg}">${no}</span><span class="name">${TOPIC_NAMES[k]}<span class="meta">${ref}</span></span><span class="go"><button class="c">概念</button><button class="p">練習</button></span>`;
+    item.querySelector('.c').onclick = () => { go(c); toggleToc(false); };
+    item.querySelector('.p').onclick = () => { go(c + 1); toggleToc(false); };
+    $('#tocGrid').appendChild(item);
+  });
+  function toggleToc(force) {
+    const open = force ?? !stage.classList.contains('toc-open');
+    stage.classList.toggle('toc-open', open);
+    document.querySelectorAll('.tocitem').forEach(t => t.classList.toggle('cur', +t.dataset.topic === +slides[cur].dataset.topic));
+  }
+  $('#bToc').onclick = () => toggleToc();
+
+  slides.forEach((s, i) => {
+    const d = document.createElement('i');
+    if (i > 0 && s.dataset.topic !== slides[i-1].dataset.topic) d.className = 'gap';
+    d.title = `${s.dataset.topic}-${s.dataset.k} ${s.dataset.title}`; d.onclick = () => go(i); $('#pageDots').appendChild(d);
+  });
+
+  function setPlaying(on) {
+    playing = on;
+    ctrls[cur].stop && ctrls[cur].stop();
+    if (on && ctrls[cur].play) ctrls[cur].play();
+    $('#bPlay').innerHTML = (on ? ICON.pause + '暫停' : ICON.play + '播放');
+    $('#bPlay').classList.toggle('on', on);
+    $('#bPlay').style.display = ctrls[cur].play ? '' : 'none';
+    stage.classList.remove('paused');
+  }
+  function go(i) {
+    if (i < 0 || i >= slides.length) return;
+    setPlaying(false);
+    slides[cur].classList.remove('active', 'exopen');
+    cur = i;
+    const s = slides[cur];
+    s.classList.add('active');
+    $('#hTitle').textContent = s.dataset.title;
+    const k = $('#hKind'); k.className = 'kind ' + s.dataset.kind;
+    k.textContent = `${s.dataset.topic}-${s.dataset.k} ${s.dataset.kind === 'concept' ? '概念' : '練習'}`;
+    $('#hRef').textContent = s.dataset.ref;
+    [...$('#pageDots').children].forEach((d, j) => d.classList.toggle('on', j === cur));
+    Ink.setPage(cur);
+    setPlaying(false);
+  }
+  function reset() {
+    setPlaying(false); toggleExplain(false); ctrls[cur].reset();
+    if (isPractice(cur)) { wireBlanks(cur); feedback(cur, '', ''); score[cur] = { ok: 0, total: 0 }; renderScore(cur); UI[cur].exb.classList.remove('ready'); }
+  }
+  function togglePlay() {
+    if (!ctrls[cur].play) return;
+    if (playing) { setPlaying(false); stage.classList.add('paused'); }
+    else setPlaying(true);
+  }
+  function renderZoom() { const z = stage.classList.contains('zoom'); $('#bZoom').classList.toggle('on', z); $('#bZoom').innerHTML = ICON.zoom + (z ? '還原' : '放大'); }
+  function toggleZoom() { stage.classList.toggle('zoom'); renderZoom(); }
+
+  $('#bPrev').onclick = () => go(cur - 1);
+  $('#bNext').onclick = () => go(cur + 1);
+  $('#bPlay').onclick = togglePlay;
+  $('#bReset').onclick = reset;
+  $('#bZoom').onclick = toggleZoom;
+  document.addEventListener('keydown', e => {
+    if (e.target.classList && e.target.classList.contains('blank')) {
+      if (e.key === 'Enter') { e.preventDefault(); check(cur); }
+      else if (e.key === 'Escape') e.target.blur();
+      return;
+    }
+    if (e.target.tagName === 'INPUT' && e.key.startsWith('Arrow')) return;
+    const k = e.key.toLowerCase();
+    if (stage.classList.contains('toc-open')) { if (k === 'escape' || k === 'm') toggleToc(false); e.preventDefault(); return; }
+    if (k === 'escape' && slides[cur].classList.contains('exopen')) toggleExplain(false);
+    else if (k === 'm') toggleToc(true);
+    else if (k === 'h') toggleExplain();
+    else if (k === 'escape') Ink.setTool('pointer');
+    else if (k === 'l') Ink.setTool(Ink.tool === 'laser' ? 'pointer' : 'laser');
+    else if (k === 'd') Ink.setTool(Ink.tool === 'pen' ? 'pointer' : 'pen');
+    else if (k === 'e') Ink.setTool(Ink.tool === 'eraser' ? 'pointer' : 'eraser');
+    else if (k === 'c') Ink.clear();
+    else if (k === 'arrowright' || k === 'pagedown') go(cur + 1);
+    else if (k === 'arrowleft' || k === 'pageup') go(cur - 1);
+    else if (k === 'q') ask(cur);
+    else if (k === 'enter' && isPractice(cur)) check(cur);
+    else if (k === 'p') togglePlay();
+    else if (k === 'r') reset();
+    else if (k === 'f') toggleZoom();
+    else if (/^[0-9]$/.test(k)) go(slides.findIndex(s => +s.dataset.topic === (k === '0' ? 10 : +k)));
+    else return;
+    e.preventDefault();
+    document.activeElement && document.activeElement.blur && document.activeElement.blur();
+  });
+
+  function fit() {
+    const sc = Math.min(innerWidth / 1920, innerHeight / 1080);
+    stage.style.transform = `scale(${sc})`;
+  }
+  addEventListener('resize', fit); fit();
+  ctrls.forEach((c, i) => { c.reset(); if (isPractice(i)) { wireBlanks(i); renderScore(i); } });
+  renderZoom();
+  go(0);
+  return {
+    pauseForUser() { if (playing) setPlaying(false); },
+    play() { setPlaying(true); },
+  };
+})();
+</script>
+</body>
+</html>
+
